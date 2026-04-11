@@ -1,8 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import StockCard from '../components/StockCard.jsx'
 import { useToast } from '../components/Toast.jsx'
 import { useTheme } from '../hooks/useTheme.js'
+
+const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
+const CAT_ICON = {
+  욕실: '🛁',
+  주방: '🍳',
+  세탁실: '🧺',
+  청소: '🧹',
+  침실: '🛏',
+  드레스룸: '👔',
+  기타: '📦',
+}
+const ALL = '전체'
 
 function greeting() {
   const h = new Date().getHours()
@@ -20,6 +32,7 @@ export default function Home() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState(ALL)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -96,6 +109,27 @@ export default function Home() {
       toast(`❌ 삭제 실패: ${e.message}`)
     }
   }
+
+  // 카테고리별 카운트 + 활성 카테고리만 노출
+  const categoryCounts = useMemo(() => {
+    const counts = { [ALL]: items.length }
+    for (const c of CATEGORIES) counts[c] = 0
+    for (const it of items) {
+      const c = it.category || '기타'
+      counts[c] = (counts[c] || 0) + 1
+    }
+    return counts
+  }, [items])
+
+  const visibleCategories = useMemo(
+    () => [ALL, ...CATEGORIES.filter((c) => categoryCounts[c] > 0)],
+    [categoryCounts],
+  )
+
+  const filteredItems = useMemo(() => {
+    if (selectedCategory === ALL) return items
+    return items.filter((i) => (i.category || '기타') === selectedCategory)
+  }, [items, selectedCategory])
 
   const low = items.filter((i) => i.need_reorder)
   const hasDailyUsage = items.filter((i) => i.days_left != null)
@@ -174,16 +208,36 @@ export default function Home() {
               </div>
             )}
 
-            <div className="section-title">내 소모품</div>
-            {items.map((it) => (
-              <StockCard
-                key={it.id}
-                item={it}
-                onRefresh={onRefresh}
-                onStockChange={onStockChange}
-                onDelete={onDelete}
-              />
-            ))}
+            <div className="category-tabs">
+              {visibleCategories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`category-tab ${selectedCategory === cat ? 'active' : ''}`}
+                  onClick={() => setSelectedCategory(cat)}
+                >
+                  {cat === ALL ? '📋 전체' : `${CAT_ICON[cat]} ${cat}`}
+                  <span className="count">{categoryCounts[cat]}</span>
+                </button>
+              ))}
+            </div>
+
+            {filteredItems.length === 0 ? (
+              <div className="empty">
+                <div className="big-icon">{CAT_ICON[selectedCategory] || '📦'}</div>
+                <div className="title">이 카테고리에 등록된 소모품이 없어요</div>
+              </div>
+            ) : (
+              filteredItems.map((it) => (
+                <StockCard
+                  key={it.id}
+                  item={it}
+                  onRefresh={onRefresh}
+                  onStockChange={onStockChange}
+                  onDelete={onDelete}
+                />
+              ))
+            )}
           </>
         )}
       </div>

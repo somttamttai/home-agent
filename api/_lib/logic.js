@@ -20,11 +20,11 @@ export class BadRequest extends Error {
 }
 
 const CREATE_FIELDS = new Set([
-  'name', 'brand', 'spec', 'max_stock',
+  'name', 'brand', 'spec', 'category', 'max_stock',
   'current_stock', 'daily_usage', 'reorder_point',
 ]);
 const UPDATE_FIELDS = new Set([
-  'current_stock', 'daily_usage', 'reorder_point', 'last_ordered_at',
+  'current_stock', 'daily_usage', 'reorder_point', 'last_ordered_at', 'category',
 ]);
 
 function annotateStock(c) {
@@ -61,7 +61,8 @@ export async function createConsumable(body) {
   if (!body || !body.name) throw new BadRequest('name is required');
   const clean = {};
   for (const [k, v] of Object.entries(body)) {
-    if (CREATE_FIELDS.has(k) && v !== null && v !== undefined) {
+    // 빈 문자열도 제외 → 컬럼의 DB default 가 적용되도록
+    if (CREATE_FIELDS.has(k) && v !== null && v !== undefined && v !== '') {
       clean[k] = v;
     }
   }

@@ -3,15 +3,75 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
 
-const TEMPLATES = [
-  { icon: '🧻', name: '크리넥스 휴지', brand: '유한킴벌리', spec: '3겹 30롤', daily_usage: 0.03, reorder_point: 7 },
-  { icon: '🧴', name: '세탁세제',     brand: '피죤',       spec: '3kg',     daily_usage: 0.03, reorder_point: 7 },
-  { icon: '🚿', name: '샴푸',         brand: '팬틴',       spec: '400ml',   daily_usage: 0.05, reorder_point: 5 },
-  { icon: '🪥', name: '치약',         brand: '2080',       spec: '120g',    daily_usage: 0.03, reorder_point: 5 },
-  { icon: '💧', name: '물티슈',       brand: '보솜이',     spec: '100매',   daily_usage: 0.1,  reorder_point: 3 },
-  { icon: '🍽️', name: '주방세제',     brand: '트리오',     spec: '500ml',   daily_usage: 0.02, reorder_point: 5 },
-  { icon: '🧻', name: '키친타올',     brand: '스카트',     spec: '150매',   daily_usage: 0.05, reorder_point: 5 },
-  { icon: '🗑️', name: '쓰레기봉투',   brand: '기타',       spec: '20L',     daily_usage: 0.2,  reorder_point: 7 },
+export const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
+
+const TEMPLATE_GROUPS = [
+  {
+    category: '욕실',
+    icon: '🛁',
+    templates: [
+      { icon: '🧻', name: '화장지',     brand: '유한킴벌리', spec: '3겹 30롤', daily_usage: 0.03, reorder_point: 7  },
+      { icon: '🚿', name: '샴푸',       brand: '팬틴',       spec: '400ml',    daily_usage: 0.05, reorder_point: 5  },
+      { icon: '🧴', name: '린스',       brand: '팬틴',       spec: '400ml',    daily_usage: 0.03, reorder_point: 7  },
+      { icon: '🧼', name: '바디워시',   brand: '다우니',     spec: '500ml',    daily_usage: 0.05, reorder_point: 5  },
+      { icon: '🪥', name: '치약',       brand: '2080',       spec: '120g',     daily_usage: 0.03, reorder_point: 5  },
+      { icon: '🪥', name: '칫솔',       brand: '오랄비',     spec: '1개',      daily_usage: 0.01, reorder_point: 30 },
+      { icon: '🪒', name: '면도기',     brand: '질레트',     spec: '1개',      daily_usage: 0.01, reorder_point: 30 },
+      { icon: '🧽', name: '욕실세제',   brand: '홈스타',     spec: '500ml',    daily_usage: 0.02, reorder_point: 14 },
+      { icon: '🚽', name: '변기세정제', brand: '후레쉬',     spec: '1개',      daily_usage: 0.01, reorder_point: 30 },
+    ],
+  },
+  {
+    category: '주방',
+    icon: '🍳',
+    templates: [
+      { icon: '🍽️', name: '주방세제',       brand: '트리오',  spec: '500ml',  daily_usage: 0.02, reorder_point: 7  },
+      { icon: '🧽',  name: '수세미',         brand: '기타',    spec: '1개',    daily_usage: 0.03, reorder_point: 14 },
+      { icon: '🧻',  name: '키친타올',       brand: '스카트',  spec: '150매',  daily_usage: 0.05, reorder_point: 7  },
+      { icon: '📦',  name: '랩',             brand: '기타',    spec: '1개',    daily_usage: 0.01, reorder_point: 30 },
+      { icon: '🛍️', name: '지퍼백',         brand: '기타',    spec: '50매',   daily_usage: 0.05, reorder_point: 14 },
+      { icon: '🥫',  name: '알루미늄호일',   brand: '기타',    spec: '1개',    daily_usage: 0.01, reorder_point: 30 },
+      { icon: '✨',  name: '식기세척기세제', brand: '피니쉬',  spec: '1kg',    daily_usage: 0.02, reorder_point: 14 },
+    ],
+  },
+  {
+    category: '세탁실',
+    icon: '🧺',
+    templates: [
+      { icon: '🧴', name: '세탁세제',   brand: '피죤',     spec: '3kg',  daily_usage: 0.03, reorder_point: 7  },
+      { icon: '💧', name: '섬유유연제', brand: '다우니',   spec: '2L',   daily_usage: 0.03, reorder_point: 7  },
+      { icon: '⚪', name: '표백제',     brand: '옥시크린', spec: '1kg',  daily_usage: 0.01, reorder_point: 30 },
+      { icon: '🍃', name: '드라이시트', brand: '다우니',   spec: '80매', daily_usage: 0.1,  reorder_point: 7  },
+    ],
+  },
+  {
+    category: '청소',
+    icon: '🧹',
+    templates: [
+      { icon: '🗑️', name: '쓰레기봉투', brand: '기타',     spec: '20L 50매', daily_usage: 0.2,  reorder_point: 7  },
+      { icon: '🧽',  name: '청소포',     brand: '기타',     spec: '30매',     daily_usage: 0.1,  reorder_point: 7  },
+      { icon: '🧴',  name: '락스',       brand: '유한락스', spec: '1L',       daily_usage: 0.02, reorder_point: 14 },
+      { icon: '🪶',  name: '먼지떨이',   brand: '기타',     spec: '1개',      daily_usage: 0.01, reorder_point: 60 },
+      { icon: '🧤',  name: '고무장갑',   brand: '기타',     spec: '1켤레',    daily_usage: 0.01, reorder_point: 30 },
+    ],
+  },
+  {
+    category: '침실',
+    icon: '🛏',
+    templates: [
+      { icon: '🌸', name: '방향제',     brand: '페브리즈', spec: '1개',   daily_usage: 0.01, reorder_point: 30 },
+      { icon: '👕', name: '섬유탈취제', brand: '페브리즈', spec: '300ml', daily_usage: 0.02, reorder_point: 14 },
+      { icon: '🦟', name: '모기향',     brand: '기타',     spec: '1개',   daily_usage: 0.01, reorder_point: 30 },
+    ],
+  },
+  {
+    category: '드레스룸',
+    icon: '👔',
+    templates: [
+      { icon: '🛡️', name: '방충제', brand: '기타', spec: '1개',  daily_usage: 0.01, reorder_point: 60 },
+      { icon: '👔',  name: '옷걸이', brand: '기타', spec: '10개', daily_usage: 0.01, reorder_point: 90 },
+    ],
+  },
 ]
 
 const FIELDS = [
@@ -29,6 +89,7 @@ function emptyManual(sp) {
     name: sp.get('name') || '',
     brand: sp.get('brand') || '',
     spec: sp.get('spec') || '',
+    category: sp.get('category') || '기타',
     max_stock: '',
     current_stock: '',
     daily_usage: '',
@@ -46,16 +107,17 @@ function ManualForm({ initial, onSaved }) {
 
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const applyTemplate = (t) => {
+  const applyTemplate = (t, category) => {
     setForm((f) => ({
       ...f,
       name: t.name,
       brand: t.brand || '',
       spec: t.spec || '',
+      category,
       daily_usage: t.daily_usage != null ? String(t.daily_usage) : '',
       reorder_point: t.reorder_point != null ? String(t.reorder_point) : '',
     }))
-    toast(`✨ "${t.name}" 템플릿 적용됨`)
+    toast(`✨ ${t.name} 템플릿 적용됨`)
   }
 
   const onSubmit = async (e) => {
@@ -68,6 +130,7 @@ function ManualForm({ initial, onSaved }) {
       name: form.name.trim(),
       brand: form.brand.trim() || null,
       spec: form.spec.trim() || null,
+      category: form.category || '기타',
       max_stock: form.max_stock ? Number(form.max_stock) : null,
       current_stock: form.current_stock ? Number(form.current_stock) : 0,
       daily_usage: form.daily_usage ? Number(form.daily_usage) : null,
@@ -93,23 +156,65 @@ function ManualForm({ initial, onSaved }) {
 
   return (
     <form onSubmit={onSubmit}>
-      <div className="section-title" style={{ paddingTop: 0 }}>자주 쓰는 소모품</div>
-      <div className="quick-chips">
-        {TEMPLATES.map((t) => (
-          <button
-            key={t.name}
-            type="button"
-            className="quick-chip"
-            onClick={() => applyTemplate(t)}
-          >
-            <span className="emoji">{t.icon}</span>
-            <span>{t.name}</span>
-          </button>
-        ))}
-      </div>
+      <div className="section-title" style={{ paddingTop: 0 }}>템플릿에서 빠르게 추가하기</div>
+      {TEMPLATE_GROUPS.map((group) => (
+        <div className="template-group" key={group.category}>
+          <div className="template-group-header">
+            <span className="template-group-icon">{group.icon}</span>
+            <span className="template-group-name">{group.category}</span>
+          </div>
+          <div className="quick-chips">
+            {group.templates.map((t) => (
+              <button
+                key={`${group.category}-${t.name}`}
+                type="button"
+                className="quick-chip"
+                onClick={() => applyTemplate(t, group.category)}
+              >
+                <span className="emoji">{t.icon}</span>
+                <span>{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <div className="section-title">상세 입력</div>
-      {FIELDS.map((f) => (
+
+      {/* 상품명 / 브랜드 / 규격 */}
+      {FIELDS.slice(0, 3).map((f) => (
+        <div key={f.key} className="form-field">
+          <label className="label" htmlFor={`field-${f.key}`}>
+            {f.label}
+            {f.required && <span className="required">*</span>}
+          </label>
+          <input
+            id={`field-${f.key}`}
+            type={f.type}
+            value={form[f.key]}
+            onChange={setField(f.key)}
+            placeholder={f.placeholder}
+            required={f.required}
+          />
+        </div>
+      ))}
+
+      {/* 카테고리 드롭다운 */}
+      <div className="form-field">
+        <label className="label" htmlFor="field-category">카테고리</label>
+        <select
+          id="field-category"
+          value={form.category}
+          onChange={setField('category')}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* 수량 / 사용량 / 재주문 */}
+      {FIELDS.slice(3).map((f) => (
         <div key={f.key} className="form-field">
           <label className="label" htmlFor={`field-${f.key}`}>
             {f.label}
@@ -168,14 +273,13 @@ function PasteForm({ onSaved }) {
       const data = await r.json()
       const withStock = (data.items || []).map((it) => ({
         ...it,
+        category: '기타',
         current_stock: '',
         max_stock: '',
       }))
       setParser(data.parser)
       setItems(withStock)
-      if (withStock.length === 0) {
-        toast('인식된 상품이 없어요')
-      }
+      if (withStock.length === 0) toast('인식된 상품이 없어요')
     } catch (e) {
       toast(`❌ 분석 실패: ${e.message}`)
     } finally {
@@ -186,28 +290,20 @@ function PasteForm({ onSaved }) {
   const updateItem = (idx, patch) => {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)))
   }
-
-  const removeItem = (idx) => {
-    setItems((arr) => arr.filter((_, i) => i !== idx))
-  }
-
-  const reset = () => {
-    setItems(null)
-    setParser(null)
-    setText('')
-  }
+  const removeItem = (idx) => setItems((arr) => arr.filter((_, i) => i !== idx))
+  const reset = () => { setItems(null); setParser(null); setText('') }
 
   const onSaveAll = async () => {
     if (!items || items.length === 0) return
     setSaving(true)
-    let ok = 0
-    let fail = 0
+    let ok = 0, fail = 0
     for (const it of items) {
       try {
         const payload = {
           name: it.name,
           brand: it.brand || null,
           spec: it.spec || null,
+          category: it.category || '기타',
           current_stock: it.current_stock ? Number(it.current_stock) : 0,
           max_stock: it.max_stock ? Number(it.max_stock) : null,
         }
@@ -271,7 +367,7 @@ function PasteForm({ onSaved }) {
         )}
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 12 }}>
-        각 상품의 현재 재고를 입력하고 한꺼번에 저장하세요. 잘못 인식된 항목은 ✕ 로 제외할 수 있어요.
+        각 상품의 카테고리와 재고를 입력하세요. 잘못 인식된 항목은 ✕ 로 제외할 수 있어요.
       </div>
 
       {items.map((it, idx) => (
@@ -291,6 +387,22 @@ function PasteForm({ onSaved }) {
               ✕
             </button>
           </div>
+
+          <div className="form-field" style={{ marginBottom: 10 }}>
+            <span className="label-prefix">카테고리</span>
+            <select
+              value={it.category}
+              onChange={(e) => updateItem(idx, { category: e.target.value })}
+              style={{
+                width: '100%', padding: '12px 14px', borderRadius: 10,
+                border: '1px solid var(--border)', background: 'var(--bg)',
+                fontSize: 15, fontWeight: 600, color: 'var(--text)',
+              }}
+            >
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
           <div className="stock-inputs">
             <label>
               <span className="label-prefix">현재 재고</span>

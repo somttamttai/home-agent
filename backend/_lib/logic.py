@@ -16,9 +16,10 @@ class BadRequest(Exception):
     pass
 
 
-_CREATE_FIELDS = {"name", "brand", "spec", "max_stock", "current_stock",
-                  "daily_usage", "reorder_point"}
-_UPDATE_FIELDS = {"current_stock", "daily_usage", "reorder_point", "last_ordered_at"}
+_CREATE_FIELDS = {"name", "brand", "spec", "category", "max_stock",
+                  "current_stock", "daily_usage", "reorder_point"}
+_UPDATE_FIELDS = {"current_stock", "daily_usage", "reorder_point",
+                  "last_ordered_at", "category"}
 
 
 def _annotate_stock(c: dict) -> dict:
@@ -47,7 +48,10 @@ def list_consumables() -> list[dict]:
 def create_consumable(body: dict) -> dict:
     if not body.get("name"):
         raise BadRequest("name is required")
-    clean = {k: v for k, v in body.items() if k in _CREATE_FIELDS and v is not None}
+    clean = {
+        k: v for k, v in body.items()
+        if k in _CREATE_FIELDS and v is not None and v != ""
+    }
     row = supabase.insert("consumables", clean)
     return _annotate_stock(row)
 
