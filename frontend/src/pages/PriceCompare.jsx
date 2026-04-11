@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
+import { buildSearchQuery, getPreferredBrand } from '../utils/brands.js'
 
 const PLY_TABS = [
   { label: '전체', value: '' },
@@ -43,11 +44,12 @@ export default function PriceCompare() {
 
   const [query, setQuery] = useState(sp.get('query') || '크리넥스 3겹 30m')
   const [ply, setPly] = useState(sp.get('ply') || '')
+  const [brand, setBrand] = useState(sp.get('brand') || '')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const runSearch = useCallback(async (q, p) => {
+  const runSearch = useCallback(async (q, p, b) => {
     if (!q || q.trim().length < 2) {
       toast('검색어를 입력해주세요')
       return
@@ -55,7 +57,8 @@ export default function PriceCompare() {
     setLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams({ query: q })
+      const fullQuery = buildSearchQuery(q, b)
+      const params = new URLSearchParams({ query: fullQuery })
       if (p) params.set('ply', p)
       const r = await fetch(`/api/prices/compare?${params}`)
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -71,30 +74,55 @@ export default function PriceCompare() {
   useEffect(() => {
     const urlQuery = sp.get('query')
     if (urlQuery) {
-      setQuery(urlQuery)
       const urlPly = sp.get('ply') || ''
+      const urlBrand = sp.get('brand') || ''
+      setQuery(urlQuery)
       setPly(urlPly)
-      runSearch(urlQuery, urlPly)
+      setBrand(urlBrand)
+      runSearch(urlQuery, urlPly, urlBrand)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const writeUrl = (q, p, b) => {
+    const next = new URLSearchParams()
+    next.set('query', q)
+    if (p) next.set('ply', p)
+    if (b) next.set('brand', b)
+    setSp(next, { replace: true })
+  }
+
   const onSearch = (e) => {
     e?.preventDefault()
-    const next = new URLSearchParams()
-    next.set('query', query)
-    if (ply) next.set('ply', ply)
-    setSp(next, { replace: true })
-    runSearch(query, ply)
+    // 직접 검색 시에는 brand 초기화 (사용자가 자유 검색)
+    setBrand('')
+    writeUrl(query, ply, '')
+    runSearch(query, ply, '')
   }
 
   const onPlyTab = (value) => {
     setPly(value)
-    const next = new URLSearchParams()
-    next.set('query', query)
-    if (value) next.set('ply', value)
-    setSp(next, { replace: true })
-    if (data) runSearch(query, value)
+    writeUrl(query, value, brand)
+    if (data) runSearch(query, value, brand)
+  }
+
+  // Settings 에 등록된 선호 브랜드 (현재 query 에 대해)
+  const myBrand = useMemo(() => getPreferredBrand(query), [query])
+
+  const onShowAllBrands = () => {
+    setBrand('')
+    writeUrl(query, ply, '')
+    runSearch(query, ply, '')
+  }
+
+  const onShowMyBrand = () => {
+    if (!myBrand) {
+      toast('이 상품에 등록된 선호 브랜드가 없어요')
+      return
+    }
+    setBrand(myBrand)
+    writeUrl(query, ply, myBrand)
+    runSearch(query, ply, myBrand)
   }
 
   const onAddToStock = () => {
@@ -168,6 +196,32 @@ export default function PriceCompare() {
                 {ply && ` · ${ply}겹 필터`}
               </div>
             </div>
+
+            {brand ? (
+              <div className="brand-banner active">
+                <span className="text">
+                  🏷️ <strong>{brand}</strong> 브랜드 기준
+                </span>
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={onShowAllBrands}
+                >
+                  전체 브랜드 보기
+                </button>
+              </div>
+            ) : myBrand ? (
+              <div className="brand-banner">
+                <span className="text">전체 브랜드 비교 중</span>
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={onShowMyBrand}
+                >
+                  🏷️ {myBrand} 브랜드만 보기
+                </button>
+              </div>
+            ) : null}
 
             {data.items && data.items.length > 0 ? (
               <>

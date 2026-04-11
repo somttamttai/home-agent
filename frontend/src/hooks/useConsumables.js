@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast.jsx'
+import { getPreferredBrand } from '../utils/brands.js'
 
 // 소모품 목록 + 액션을 공유하는 훅. Home/CategoryDetail 양쪽에서 사용.
 export function useConsumables() {
@@ -57,27 +58,15 @@ export function useConsumables() {
   }, [toast])
 
   const onRefresh = useCallback((item) => {
-    // 검색어 빌드 규칙:
-    //   - spec 은 항상 제외 (네이버 검색 noise 제거)
-    //   - brand 가 "기타" 거나 비어있으면 → 상품명만
-    //   - 상품명에 brand 가 이미 포함되어 있으면 → 상품명만
-    //   - 상품명이 2단어 이상이면 → 이미 브랜드 컨텍스트 포함 가능성 → 상품명만
-    //   - 그 외 단일 단어 상품명 + 구체 브랜드 → "brand name"
+    // /compare 로 넘길 때:
+    //   - query: 상품명 (bare)
+    //   - brand: 사용자가 Settings 에서 등록한 선호 브랜드 (있으면)
+    //   - ply: spec 에 "X겹" 있으면 추출
     const name = (item.name || '').trim()
-    const brand = (item.brand || '').trim()
+    const preferred = getPreferredBrand(name)
 
-    let query = name
-    if (
-      brand &&
-      brand !== '기타' &&
-      !name.includes(brand) &&
-      name.split(/\s+/).length < 2
-    ) {
-      query = `${brand} ${name}`
-    }
-
-    const params = new URLSearchParams({ query })
-    // 휴지/화장지 류는 spec 의 겹수만 ply 필터로 전달
+    const params = new URLSearchParams({ query: name })
+    if (preferred) params.set('brand', preferred)
     if (item.spec && /(\d)\s*겹/.test(item.spec)) {
       params.set('ply', item.spec.match(/(\d)\s*겹/)[1])
     }
