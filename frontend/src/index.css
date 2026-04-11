@@ -722,6 +722,175 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 }
 .theme-toggle:active { transform: scale(0.94); }
 
+/* ── Tab switcher (Add page) ──────────────────────────────── */
+.tab-switcher {
+  display: flex;
+  gap: 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.tab-switcher button {
+  flex: 1;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-sub);
+  border-radius: 10px;
+  transition: background 0.15s, color 0.15s;
+  letter-spacing: -0.01em;
+}
+.tab-switcher button.active {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+
+/* ── Quick add chips (Add page) ───────────────────────────── */
+.quick-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 0 18px;
+  margin: 0 -20px 4px;
+  padding-left: 20px;
+  padding-right: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.quick-chips::-webkit-scrollbar { display: none; }
+.quick-chip {
+  flex-shrink: 0;
+  padding: 14px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 80px;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  letter-spacing: -0.01em;
+}
+.quick-chip:active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  transform: scale(0.96);
+}
+.quick-chip .emoji { font-size: 26px; line-height: 1; }
+
+/* ── Big textarea (paste form) ────────────────────────────── */
+.textarea-big {
+  width: 100%;
+  min-height: 220px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.textarea-big:focus { border-color: var(--primary); }
+.textarea-big::placeholder {
+  color: var(--text-hint);
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+/* ── Parsed item card (paste result) ──────────────────────── */
+.parsed-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 10px;
+}
+.parsed-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.parsed-card .brand {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.parsed-card .name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 2px;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.parsed-card .spec {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-sub);
+  font-size: 11px;
+  font-weight: 700;
+}
+.parsed-card .remove-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  font-size: 14px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.parsed-card .remove-btn:active {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+.parsed-card .stock-inputs {
+  display: flex;
+  gap: 8px;
+}
+.parsed-card .stock-inputs label {
+  flex: 1;
+  display: block;
+}
+.parsed-card .label-prefix {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+}
+.parsed-card .stock-inputs input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.parsed-card .stock-inputs input:focus { border-color: var(--primary); }
+
 /* ── Spinner ──────────────────────────────────────────────── */
 .spinner {
   display: inline-block;

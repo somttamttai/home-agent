@@ -174,6 +174,29 @@ if (tmpId) {
   );
 }
 
+// ── 11b. POST /api/scan/parse-text (쿠팡 붙여넣기 파서) ────────────────
+{
+  const text = `[크리넥스] 순수 소프트 화장지 3겹 30m 30롤 2팩
+피죤 세탁세제 드럼 3kg
+2080 치약 120g 3개입`
+  const { status, body } = await call(scan, {
+    method: 'POST',
+    url: '/api/scan/parse-text',
+    body: { text },
+  })
+  ok('parse-text simple parser',
+    status === 200 &&
+      body?.parser === 'simple' &&
+      Array.isArray(body?.items) &&
+      body.items.length === 3 &&
+      body.items[0].brand === '크리넥스' &&
+      body.items[1].brand === '피죤' &&
+      body.items[1].spec === '3kg' &&
+      body.items[2].brand === '2080',
+    `parser=${body?.parser}, items=${body?.items?.length}, first.brand=${body?.items?.[0]?.brand}`,
+  )
+}
+
 // ── 11. 404 routing check ──────────────────────────────────────────────
 {
   const { status, body } = await call(consumables, {

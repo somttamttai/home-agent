@@ -13,6 +13,12 @@ export default async function handler(req, res) {
       return await logic.barcodeLookup(body.code, body.format);
     }
 
+    // 쿠팡 주문내역 등 자유 텍스트를 상품 리스트로 파싱
+    if (path === '/api/scan/parse-text' && method === 'POST') {
+      const body = readBody(req);
+      return await logic.parseOrderText(body.text);
+    }
+
     // OCR 은 🔒 준비중 스텁 응답만 (multipart 파싱 불필요)
     if (path === '/api/scan/product-image' && method === 'POST') {
       return logic.recognizeProductImage();

@@ -3,37 +3,60 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
 
-const FIELDS = [
-  { key: 'name',          label: '상품명',        type: 'text',   required: true,
-    placeholder: '예: 크리넥스 화장지' },
-  { key: 'brand',         label: '브랜드',        type: 'text',
-    placeholder: '예: 유한킴벌리' },
-  { key: 'spec',          label: '규격',          type: 'text',
-    placeholder: '예: 3겹 30m 30롤' },
-  { key: 'max_stock',     label: '최대 보관 수량', type: 'number',
-    placeholder: '30', step: 'any' },
-  { key: 'current_stock', label: '현재 재고',     type: 'number', required: true,
-    placeholder: '20', step: 'any' },
-  { key: 'daily_usage',   label: '일일 소비량',   type: 'number',
-    placeholder: '0.5 (하루 반롤)', step: 'any' },
-  { key: 'reorder_point', label: '재주문 시점 (일)', type: 'number',
-    placeholder: '7 (7일치 남았을 때 알림)', step: 'any' },
+const TEMPLATES = [
+  { icon: '🧻', name: '크리넥스 휴지', brand: '유한킴벌리', spec: '3겹 30롤', daily_usage: 0.03, reorder_point: 7 },
+  { icon: '🧴', name: '세탁세제',     brand: '피죤',       spec: '3kg',     daily_usage: 0.03, reorder_point: 7 },
+  { icon: '🚿', name: '샴푸',         brand: '팬틴',       spec: '400ml',   daily_usage: 0.05, reorder_point: 5 },
+  { icon: '🪥', name: '치약',         brand: '2080',       spec: '120g',    daily_usage: 0.03, reorder_point: 5 },
+  { icon: '💧', name: '물티슈',       brand: '보솜이',     spec: '100매',   daily_usage: 0.1,  reorder_point: 3 },
+  { icon: '🍽️', name: '주방세제',     brand: '트리오',     spec: '500ml',   daily_usage: 0.02, reorder_point: 5 },
+  { icon: '🧻', name: '키친타올',     brand: '스카트',     spec: '150매',   daily_usage: 0.05, reorder_point: 5 },
+  { icon: '🗑️', name: '쓰레기봉투',   brand: '기타',       spec: '20L',     daily_usage: 0.2,  reorder_point: 7 },
 ]
 
-export default function Add() {
-  const nav = useNavigate()
-  const toast = useToast()
-  const [sp] = useSearchParams()
+const FIELDS = [
+  { key: 'name',          label: '상품명',           type: 'text',   required: true,  placeholder: '예: 크리넥스 화장지' },
+  { key: 'brand',         label: '브랜드',           type: 'text',                    placeholder: '예: 유한킴벌리' },
+  { key: 'spec',          label: '규격',             type: 'text',                    placeholder: '예: 3겹 30m 30롤' },
+  { key: 'max_stock',     label: '최대 보관 수량',    type: 'number',                  placeholder: '30',  step: 'any' },
+  { key: 'current_stock', label: '현재 재고',         type: 'number', required: true,  placeholder: '20',  step: 'any' },
+  { key: 'daily_usage',   label: '일일 소비량',       type: 'number',                  placeholder: '0.5 (하루 반롤)', step: 'any' },
+  { key: 'reorder_point', label: '재주문 시점 (일)',  type: 'number',                  placeholder: '7',   step: 'any' },
+]
 
-  const [form, setForm] = useState({
+function emptyManual(sp) {
+  return {
     name: sp.get('name') || '',
     brand: sp.get('brand') || '',
     spec: sp.get('spec') || '',
-    max_stock: '', current_stock: '', daily_usage: '', reorder_point: '',
-  })
+    max_stock: '',
+    current_stock: '',
+    daily_usage: '',
+    reorder_point: '',
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// 직접 입력 탭
+// ───────────────────────────────────────────────────────────────────────
+function ManualForm({ initial, onSaved }) {
+  const toast = useToast()
+  const [form, setForm] = useState(initial)
   const [saving, setSaving] = useState(false)
 
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  const applyTemplate = (t) => {
+    setForm((f) => ({
+      ...f,
+      name: t.name,
+      brand: t.brand || '',
+      spec: t.spec || '',
+      daily_usage: t.daily_usage != null ? String(t.daily_usage) : '',
+      reorder_point: t.reorder_point != null ? String(t.reorder_point) : '',
+    }))
+    toast(`✨ "${t.name}" 템플릿 적용됨`)
+  }
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -60,7 +83,7 @@ export default function Add() {
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       toast(`✅ "${payload.name}" 추가됨`)
-      nav('/')
+      onSaved()
     } catch (err) {
       toast(`❌ 저장 실패: ${err.message}`)
     } finally {
@@ -70,46 +93,289 @@ export default function Add() {
 
   return (
     <form onSubmit={onSubmit}>
-      <PageHeader title="소모품 추가" />
-      <div className="page">
-        <div style={{ padding: '4px 4px 20px' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
-            어떤 소모품을 추가할까요?
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
-            이름만 있어도 저장돼요. 사용량을 넣으면 소진 예상일을 알려드려요.
-          </div>
-        </div>
-
-        {FIELDS.map((f) => (
-          <div key={f.key} className="form-field">
-            <label className="label" htmlFor={`field-${f.key}`}>
-              {f.label}
-              {f.required && <span className="required">*</span>}
-            </label>
-            <input
-              id={`field-${f.key}`}
-              type={f.type}
-              value={form[f.key]}
-              onChange={setField(f.key)}
-              placeholder={f.placeholder}
-              step={f.step}
-              inputMode={f.type === 'number' ? 'decimal' : undefined}
-              required={f.required}
-            />
-          </div>
+      <div className="section-title" style={{ paddingTop: 0 }}>자주 쓰는 소모품</div>
+      <div className="quick-chips">
+        {TEMPLATES.map((t) => (
+          <button
+            key={t.name}
+            type="button"
+            className="quick-chip"
+            onClick={() => applyTemplate(t)}
+          >
+            <span className="emoji">{t.icon}</span>
+            <span>{t.name}</span>
+          </button>
         ))}
       </div>
 
+      <div className="section-title">상세 입력</div>
+      {FIELDS.map((f) => (
+        <div key={f.key} className="form-field">
+          <label className="label" htmlFor={`field-${f.key}`}>
+            {f.label}
+            {f.required && <span className="required">*</span>}
+          </label>
+          <input
+            id={`field-${f.key}`}
+            type={f.type}
+            value={form[f.key]}
+            onChange={setField(f.key)}
+            placeholder={f.placeholder}
+            step={f.step}
+            inputMode={f.type === 'number' ? 'decimal' : undefined}
+            required={f.required}
+          />
+        </div>
+      ))}
+
       <div className="bottom-action">
-        <button
-          type="submit"
-          className="btn block lg"
-          disabled={saving}
-        >
+        <button type="submit" className="btn block lg" disabled={saving}>
           {saving ? '저장중…' : '💾 저장하기'}
         </button>
       </div>
     </form>
+  )
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// 쿠팡 붙여넣기 탭
+// ───────────────────────────────────────────────────────────────────────
+const PASTE_PLACEHOLDER = `[크리넥스] 순수 소프트 화장지 3겹 30m 30롤 2팩
+피죤 세탁세제 드럼 3kg
+2080 치약 120g 3개입`
+
+function PasteForm({ onSaved }) {
+  const toast = useToast()
+  const [text, setText] = useState('')
+  const [parsing, setParsing] = useState(false)
+  const [parser, setParser] = useState(null)
+  const [items, setItems] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  const onParse = async () => {
+    if (!text.trim()) {
+      toast('붙여넣을 내용을 입력해주세요')
+      return
+    }
+    setParsing(true)
+    try {
+      const r = await fetch('/api/scan/parse-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const data = await r.json()
+      const withStock = (data.items || []).map((it) => ({
+        ...it,
+        current_stock: '',
+        max_stock: '',
+      }))
+      setParser(data.parser)
+      setItems(withStock)
+      if (withStock.length === 0) {
+        toast('인식된 상품이 없어요')
+      }
+    } catch (e) {
+      toast(`❌ 분석 실패: ${e.message}`)
+    } finally {
+      setParsing(false)
+    }
+  }
+
+  const updateItem = (idx, patch) => {
+    setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, ...patch } : it)))
+  }
+
+  const removeItem = (idx) => {
+    setItems((arr) => arr.filter((_, i) => i !== idx))
+  }
+
+  const reset = () => {
+    setItems(null)
+    setParser(null)
+    setText('')
+  }
+
+  const onSaveAll = async () => {
+    if (!items || items.length === 0) return
+    setSaving(true)
+    let ok = 0
+    let fail = 0
+    for (const it of items) {
+      try {
+        const payload = {
+          name: it.name,
+          brand: it.brand || null,
+          spec: it.spec || null,
+          current_stock: it.current_stock ? Number(it.current_stock) : 0,
+          max_stock: it.max_stock ? Number(it.max_stock) : null,
+        }
+        const r = await fetch('/api/consumables', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        ok++
+      } catch {
+        fail++
+      }
+    }
+    setSaving(false)
+    if (fail === 0) {
+      toast(`✅ ${ok}개 모두 저장됨`)
+      onSaved()
+    } else {
+      toast(`⚠️ ${ok}개 저장, ${fail}개 실패`)
+    }
+  }
+
+  if (!items) {
+    return (
+      <div>
+        <div className="section-title" style={{ paddingTop: 0 }}>주문내역 붙여넣기</div>
+        <div style={{ fontSize: 13, color: 'var(--text-sub)', marginBottom: 12, lineHeight: 1.5 }}>
+          쿠팡 앱 → 주문내역 → 상품명 복사해서 붙여넣어주세요.<br />
+          한 줄에 하나씩, 여러 상품을 한꺼번에 추가할 수 있어요.
+        </div>
+        <textarea
+          className="textarea-big"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={PASTE_PLACEHOLDER}
+          rows={8}
+        />
+        <div className="bottom-action">
+          <button
+            type="button"
+            className="btn block lg"
+            onClick={onParse}
+            disabled={parsing || !text.trim()}
+          >
+            {parsing ? '분석중…' : '🔍 분석하기'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="section-title" style={{ paddingTop: 0 }}>
+        분석 결과 ({items.length}개)
+        {parser === 'simple' && (
+          <span style={{ color: 'var(--text-hint)', fontWeight: 600, marginLeft: 8 }}>
+            · 간단 파싱
+          </span>
+        )}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 12 }}>
+        각 상품의 현재 재고를 입력하고 한꺼번에 저장하세요. 잘못 인식된 항목은 ✕ 로 제외할 수 있어요.
+      </div>
+
+      {items.map((it, idx) => (
+        <div key={idx} className="parsed-card">
+          <div className="parsed-card-top">
+            <div style={{ minWidth: 0, flex: 1 }}>
+              {it.brand && <div className="brand">{it.brand}</div>}
+              <div className="name">{it.name}</div>
+              {it.spec && <div className="spec">{it.spec}</div>}
+            </div>
+            <button
+              type="button"
+              className="remove-btn"
+              onClick={() => removeItem(idx)}
+              aria-label="제외"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="stock-inputs">
+            <label>
+              <span className="label-prefix">현재 재고</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="any"
+                value={it.current_stock}
+                onChange={(e) => updateItem(idx, { current_stock: e.target.value })}
+                placeholder="0"
+              />
+            </label>
+            <label>
+              <span className="label-prefix">최대 재고</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="any"
+                value={it.max_stock}
+                onChange={(e) => updateItem(idx, { max_stock: e.target.value })}
+                placeholder="-"
+              />
+            </label>
+          </div>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        className="btn tonal block"
+        style={{ marginTop: 8 }}
+        onClick={reset}
+      >
+        ← 다시 입력하기
+      </button>
+
+      <div className="bottom-action">
+        <button
+          type="button"
+          className="btn block lg"
+          onClick={onSaveAll}
+          disabled={saving || items.length === 0}
+        >
+          {saving ? '저장중…' : `💾 ${items.length}개 전체 저장`}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// 최상위 — 탭 스위처
+// ───────────────────────────────────────────────────────────────────────
+export default function Add() {
+  const nav = useNavigate()
+  const [sp] = useSearchParams()
+  const [tab, setTab] = useState('manual')
+
+  const onSaved = () => nav('/')
+
+  return (
+    <div>
+      <PageHeader title="소모품 추가" />
+      <div className="page">
+        <div className="tab-switcher">
+          <button
+            type="button"
+            className={tab === 'manual' ? 'active' : ''}
+            onClick={() => setTab('manual')}
+          >
+            직접 입력
+          </button>
+          <button
+            type="button"
+            className={tab === 'paste' ? 'active' : ''}
+            onClick={() => setTab('paste')}
+          >
+            쿠팡 붙여넣기
+          </button>
+        </div>
+
+        {tab === 'manual'
+          ? <ManualForm initial={emptyManual(sp)} onSaved={onSaved} />
+          : <PasteForm onSaved={onSaved} />}
+      </div>
+    </div>
   )
 }

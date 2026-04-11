@@ -110,6 +110,12 @@ async def barcode(req: Request):
     return _run(lambda: logic.barcode_lookup(body.get("code"), body.get("format")))
 
 
+@app.post("/api/scan/parse-text")
+async def parse_text(req: Request):
+    body = await req.json()
+    return _run(lambda: logic.parse_order_text(body.get("text", "")))
+
+
 @app.post("/api/scan/product-image")
 def product_image():
     return logic.recognize_product_image(b"")

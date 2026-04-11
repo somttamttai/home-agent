@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 
 from . import naver, ocr, supabase
@@ -155,3 +156,74 @@ def recognize_product_image(image_bytes: bytes) -> dict:
 
 def parse_receipt(image_bytes: bytes) -> dict:
     return ocr.parse_receipt(image_bytes)
+
+
+# ── 쿠팡 주문내역 텍스트 파싱 ─────────────────────────────────────────
+_UNIT_RE = re.compile(
+    r"(\d+(?:\.\d+)?)\s*(kg|ml|mL|g|L|l|롤|m|매|팩|개입|개|겹)(?![a-zA-Z])",
+    re.IGNORECASE,
+)
+
+
+def _simple_parse_line(line: str) -> dict | None:
+    orig = (line or "").strip()
+    if not orig:
+        return None
+
+    brand = ""
+    rest = orig
+
+    # [브랜드] 접두 패턴
+    bracket = re.match(r"^\[([^\]]+)\]\s*(.*)$", orig)
+    if bracket:
+        brand = bracket.group(1).strip()
+        rest = bracket.group(2).strip()
+    else:
+        # 첫 단어를 브랜드로 추정
+        parts = rest.split(None, 1)
+        if len(parts) >= 2:
+            brand = parts[0]
+            rest = parts[1].strip()
+
+    # 규격 토큰 추출
+    spec_tokens = []
+    for m in _UNIT_RE.finditer(rest):
+        spec_tokens.append(re.sub(r"\s+", "", m.group(0)))
+    spec = " ".join(spec_tokens)
+
+    # 이름은 규격 토큰 제거한 나머지
+    name = rest
+    for tok in spec_tokens:
+        name = name.replace(tok, "")
+    name = re.sub(r"\s+", " ", name).strip()
+
+    # 이름이 비었는데 brand 가 있으면 brand 를 이름으로 승격
+    if not name and brand:
+        name = brand
+        brand = ""
+    if not name:
+        name = orig
+
+    return {"name": name, "brand": brand, "spec": spec, "raw": orig}
+
+
+def parse_order_text(text: str) -> dict:
+    if not text or not isinstance(text, str):
+        raise BadRequest("text is required")
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    if not lines:
+        raise BadRequest("no content")
+
+    # 1) Claude 시도 (ENABLE_OCR=true 일 때만)
+    try:
+        claude = ocr.parse_order_text_with_claude(text)
+        if claude and claude.get("items"):
+            return {"parser": "claude", "items": claude["items"]}
+    except Exception:
+        pass
+
+    # 2) Simple rule-based parser
+    return {
+        "parser": "simple",
+        "items": [x for x in (_simple_parse_line(l) for l in lines) if x],
+    }
