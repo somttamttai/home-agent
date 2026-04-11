@@ -24,7 +24,8 @@ const CREATE_FIELDS = new Set([
   'current_stock', 'daily_usage', 'reorder_point',
 ]);
 const UPDATE_FIELDS = new Set([
-  'current_stock', 'daily_usage', 'reorder_point', 'last_ordered_at', 'category',
+  'name', 'brand', 'spec', 'category',
+  'current_stock', 'max_stock', 'daily_usage', 'reorder_point', 'last_ordered_at',
 ]);
 
 function annotateStock(c) {
@@ -79,9 +80,12 @@ export async function getConsumable(cid) {
 export async function updateConsumable(cid, body) {
   const patch = {};
   for (const [k, v] of Object.entries(body || {})) {
-    if (UPDATE_FIELDS.has(k) && v !== null && v !== undefined) {
-      patch[k] = v;
-    }
+    if (!UPDATE_FIELDS.has(k)) continue;
+    if (v === undefined) continue;
+    // name 은 NOT NULL 이라 비울 수 없음
+    if (k === 'name' && (v === null || v === '')) continue;
+    // 빈 문자열은 nullable 컬럼을 비우는 의미로 해석
+    patch[k] = v === '' ? null : v;
   }
   if (Object.keys(patch).length === 0) {
     throw new BadRequest('no updatable fields');

@@ -46,6 +46,29 @@ export function useConsumables() {
     }
   }, [toast, load])
 
+  // 일반화된 PATCH 헬퍼 — 임의 필드를 한꺼번에 업데이트
+  const onUpdate = useCallback(async (item, patch) => {
+    // optimistic update
+    setItems((list) =>
+      list.map((i) => (i.id === item.id ? { ...i, ...patch } : i)),
+    )
+    try {
+      const r = await fetch(`/api/consumables/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const updated = await r.json()
+      setItems((list) => list.map((i) => (i.id === item.id ? updated : i)))
+      return updated
+    } catch (e) {
+      toast(`❌ 저장 실패: ${e.message}`)
+      load()
+      throw e
+    }
+  }, [toast, load])
+
   const onDelete = useCallback(async (item) => {
     try {
       const r = await fetch(`/api/consumables/${item.id}`, { method: 'DELETE' })
@@ -79,6 +102,7 @@ export function useConsumables() {
     error,
     reload: load,
     onStockChange,
+    onUpdate,
     onDelete,
     onRefresh,
   }

@@ -18,8 +18,9 @@ class BadRequest(Exception):
 
 _CREATE_FIELDS = {"name", "brand", "spec", "category", "max_stock",
                   "current_stock", "daily_usage", "reorder_point"}
-_UPDATE_FIELDS = {"current_stock", "daily_usage", "reorder_point",
-                  "last_ordered_at", "category"}
+_UPDATE_FIELDS = {"name", "brand", "spec", "category",
+                  "current_stock", "max_stock", "daily_usage", "reorder_point",
+                  "last_ordered_at"}
 
 
 def _annotate_stock(c: dict) -> dict:
@@ -64,7 +65,15 @@ def get_consumable(cid: int) -> dict:
 
 
 def update_consumable(cid: int, body: dict) -> dict:
-    patch = {k: v for k, v in body.items() if k in _UPDATE_FIELDS and v is not None}
+    patch: dict = {}
+    for k, v in body.items():
+        if k not in _UPDATE_FIELDS:
+            continue
+        # name 은 NOT NULL 이라 비울 수 없음
+        if k == "name" and (v is None or v == ""):
+            continue
+        # 빈 문자열은 nullable 컬럼을 비우는 의미
+        patch[k] = None if v == "" else v
     if not patch:
         raise BadRequest("no updatable fields")
     rows = supabase.update("consumables", {"id": cid}, patch)

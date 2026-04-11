@@ -19,8 +19,10 @@ export default function CategoryDetail() {
   const decoded = decodeURIComponent(name || '')
   const icon = CAT_ICON[decoded] || '📦'
 
-  const { items, loading, error, reload, onStockChange, onDelete, onRefresh } =
-    useConsumables()
+  const {
+    items, loading, error, reload,
+    onStockChange, onUpdate, onDelete, onRefresh,
+  } = useConsumables()
 
   const filtered = useMemo(
     () => items.filter((i) => (i.category || '기타') === decoded),
@@ -67,6 +69,7 @@ export default function CategoryDetail() {
                 item={it}
                 onRefresh={onRefresh}
                 onStockChange={onStockChange}
+                onUpdate={onUpdate}
                 onDelete={onDelete}
               />
             ))}
