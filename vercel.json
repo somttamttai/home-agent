@@ -2,17 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "cd frontend && npm install && npm run build",
-  "installCommand": "pip install requests",
   "outputDirectory": "frontend/dist",
-  "functions": {
-    "api/*.py": {
-      "runtime": "python3.11"
-    }
-  },
   "rewrites": [
     { "source": "/api/consumables/(.*)", "destination": "/api/consumables" },
-    { "source": "/api/prices/(.*)",      "destination": "/api/prices" },
-    { "source": "/api/scan/(.*)",        "destination": "/api/scan" },
-    { "source": "/((?!api/).*)",         "destination": "/index.html" }
+    { "source": "/api/prices/(.*)", "destination": "/api/prices" },
+    { "source": "/api/scan/(.*)", "destination": "/api/scan" },
+    { "source": "/api/health", "destination": "/api/health" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
