@@ -11,7 +11,12 @@
       "Bash(curl -sv -X POST http://127.0.0.1:8000/api/consumables -H 'Content-Type: application/json' -d '{\"name\":\"TEST\",\"current_stock\":10}')",
       "Bash(curl -s -X PATCH http://127.0.0.1:8000/api/consumables/2 -H 'Content-Type: application/json' -d '{\"current_stock\":15}')",
       "Bash(curl -s -X DELETE \"http://127.0.0.1:8000/api/consumables/2\")",
-      "Bash(curl -s http://127.0.0.1:8000/api/consumables)"
+      "Bash(curl -s http://127.0.0.1:8000/api/consumables)",
+      "Bash(grep -E \"^\\\\.env$|ANTHROPIC|NAVER_CLIENT_SECRET\")",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)"
     ]
   }
 }
