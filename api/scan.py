@@ -1,3 +1,4 @@
+# @vercel/python
 """Vercel Serverless Function — /api/scan/*"""
 
 from __future__ import annotations

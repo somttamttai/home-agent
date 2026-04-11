@@ -1,3 +1,4 @@
+# @vercel/python
 """Vercel Serverless Function — /api/prices/*"""
 
 from __future__ import annotations
