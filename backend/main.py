@@ -18,8 +18,8 @@ from fastapi import FastAPI, HTTPException, Query, Request  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
-from api._lib import logic  # noqa: E402
-from api._lib.logic import BadRequest, NotFound  # noqa: E402
+from backend._lib import logic  # noqa: E402
+from backend._lib.logic import BadRequest, NotFound  # noqa: E402
 from backend.scheduler import start_scheduler, stop_scheduler  # noqa: E402
 
 

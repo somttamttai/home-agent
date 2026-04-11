@@ -1,20 +1,19 @@
-# Vercel 배포에 포함하지 않을 파일 (Vercel 의 Python 런타임이 스캔하지 않게)
-# 로컬 전용 백엔드 + 예전 스탠드얼론 스크립트
+# Vercel 배포에 포함하지 않을 파일
+# 로컬 전용 Python 백엔드 + 예전 스탠드얼론 스크립트
 backend/
 stock_check.py
 test_supabase.py
 naver_kleenex_unit_price.py
 create_tables.sql
 
-# Python 캐시
+# Python 캐시 / 가상환경 (루트에 남아있을 경우)
 __pycache__/
 *.pyc
 *.pyo
-
-# 가상환경 / 환경파일
 .venv/
 venv/
-env/
+
+# 환경파일
 .env
 .env.*
 

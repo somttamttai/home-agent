@@ -49,7 +49,6 @@ def unit_price_per_meter(price: int, specs: dict) -> float | None:
 
 
 def search(query: str, display: int = 20, sort: str = "sim") -> list[dict]:
-    """네이버 쇼핑 검색. 파싱된 스펙과 단위가격을 함께 반환."""
     r = requests.get(
         SHOP_URL,
         headers=_headers(),
@@ -80,7 +79,6 @@ def search(query: str, display: int = 20, sort: str = "sim") -> list[dict]:
 
 
 def find_cheapest(query: str, ply: int | None = None) -> dict | None:
-    """단위가격 최저가. ply 지정 시 같은 겹수만 비교."""
     items = search(query, display=100, sort="sim")
     valid = [
         i for i in items

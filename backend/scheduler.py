@@ -8,7 +8,7 @@ import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from api._lib import naver, supabase
+from backend._lib import naver, supabase
 
 log = logging.getLogger("home-agent.scheduler")
 

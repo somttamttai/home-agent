@@ -1,7 +1,4 @@
-"""
-프레임워크 무관한 비즈니스 로직.
-api/*.py (Vercel BaseHTTPRequestHandler) 와 backend/main.py (로컬 FastAPI) 가 공유.
-"""
+"""비즈니스 로직 (로컬 FastAPI 용)."""
 
 from __future__ import annotations
 
@@ -11,14 +8,13 @@ from . import naver, ocr, supabase
 
 
 class NotFound(Exception):
-    """404 매핑용."""
+    pass
 
 
 class BadRequest(Exception):
-    """400 매핑용."""
+    pass
 
 
-# ── consumables ──────────────────────────────────────────────────────────
 _CREATE_FIELDS = {"name", "brand", "spec", "max_stock", "current_stock",
                   "daily_usage", "reorder_point"}
 _UPDATE_FIELDS = {"current_stock", "daily_usage", "reorder_point", "last_ordered_at"}
@@ -83,7 +79,6 @@ def low_stock_alerts() -> list[dict]:
     return [r for r in annotated if r["need_reorder"]]
 
 
-# ── prices ───────────────────────────────────────────────────────────────
 def compare_prices(query: str | None, ply: int | None = None) -> dict:
     if not query or len(query) < 2:
         raise BadRequest("query too short")
@@ -139,7 +134,6 @@ def refresh_price(cid: int) -> dict:
     return {"saved": row, "best": best}
 
 
-# ── scan ─────────────────────────────────────────────────────────────────
 def barcode_lookup(code: str | None, fmt: str | None = None) -> dict:
     if not code or len(code) < 6:
         raise BadRequest("invalid barcode")

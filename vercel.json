@@ -5,9 +5,9 @@
   "outputDirectory": "frontend/dist",
   "rewrites": [
     { "source": "/api/consumables/(.*)", "destination": "/api/consumables" },
-    { "source": "/api/prices/(.*)", "destination": "/api/prices" },
-    { "source": "/api/scan/(.*)", "destination": "/api/scan" },
-    { "source": "/api/health", "destination": "/api/health" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/api/prices/(.*)",      "destination": "/api/prices" },
+    { "source": "/api/scan/(.*)",        "destination": "/api/scan" },
+    { "source": "/api/health",           "destination": "/api/health" },
+    { "source": "/((?!api/).*)",         "destination": "/index.html" }
   ]
 }
