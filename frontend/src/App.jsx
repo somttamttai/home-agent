@@ -5,6 +5,7 @@ import Receipt from './pages/Receipt.jsx'
 import PriceCompare from './pages/PriceCompare.jsx'
 import Add from './pages/Add.jsx'
 import CategoryDetail from './pages/CategoryDetail.jsx'
+import Settings from './pages/Settings.jsx'
 import TabBar from './components/TabBar.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/compare" element={<PriceCompare />} />
           <Route path="/receipt" element={<Receipt />} />
           <Route path="/category/:name" element={<CategoryDetail />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
         <TabBar />
       </div>

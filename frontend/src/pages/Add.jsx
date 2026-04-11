@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
+import { calcDailyUsage, expectedDays, getBaselineDays } from '../utils/consumption.js'
+import { effectivePeople, formatPeople, loadFamily } from '../utils/family.js'
 
 export const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
 
@@ -105,20 +107,35 @@ function ManualForm({ initial, onSaved }) {
   const [form, setForm] = useState(initial)
   const [saving, setSaving] = useState(false)
 
+  // 가족 인원은 mount 시 1회 로드 (Settings 에서 변경하면 다음 mount 에 반영)
+  const family = useMemo(() => loadFamily(), [])
+  const people = effectivePeople(family)
+
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const applyTemplate = (t, category) => {
+    // 가족 인원 기준 일일 소비량 자동 계산 (baseline 없으면 템플릿 fallback)
+    const auto = calcDailyUsage(t.name, family)
+    const dailyUsage =
+      auto != null ? auto : (t.daily_usage != null ? t.daily_usage : null)
+
     setForm((f) => ({
       ...f,
       name: t.name,
       brand: t.brand || '',
       spec: t.spec || '',
       category,
-      daily_usage: t.daily_usage != null ? String(t.daily_usage) : '',
+      daily_usage: dailyUsage != null ? String(dailyUsage) : '',
       reorder_point: t.reorder_point != null ? String(t.reorder_point) : '',
     }))
     toast(`✨ ${t.name} 템플릿 적용됨`)
   }
+
+  // 현재 입력된 상품명에 baseline 이 있으면 안내문구 표시
+  const hintDays = useMemo(() => {
+    if (!form.name || !getBaselineDays(form.name)) return null
+    return expectedDays(form.name, family)
+  }, [form.name, family])
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -230,6 +247,11 @@ function ManualForm({ initial, onSaved }) {
             inputMode={f.type === 'number' ? 'decimal' : undefined}
             required={f.required}
           />
+          {f.key === 'daily_usage' && hintDays != null && (
+            <div className="form-hint">
+              👨‍👩‍👧 {formatPeople(people)}인 기준 약 {hintDays}일 소비 예상
+            </div>
+          )}
         </div>
       ))}
 

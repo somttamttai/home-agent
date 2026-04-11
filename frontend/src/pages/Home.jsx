@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useToast } from '../components/Toast.jsx'
 import { useTheme } from '../hooks/useTheme.js'
 import { useConsumables } from '../hooks/useConsumables.js'
 
@@ -38,7 +37,6 @@ function formatDday(daysLeft) {
 
 export default function Home() {
   const nav = useNavigate()
-  const toast = useToast()
   const { theme, toggle } = useTheme()
   const { items, loading, error, reload, onRefresh } = useConsumables()
 
@@ -111,7 +109,7 @@ export default function Home() {
           <button
             type="button"
             className="theme-toggle"
-            onClick={() => toast('🔒 곧 업데이트 예정이에요')}
+            onClick={() => nav('/settings')}
             aria-label="설정"
           >
             ⚙️
