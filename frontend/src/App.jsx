@@ -4,6 +4,7 @@ import Scan from './pages/Scan.jsx'
 import Receipt from './pages/Receipt.jsx'
 import PriceCompare from './pages/PriceCompare.jsx'
 import Add from './pages/Add.jsx'
+import CategoryDetail from './pages/CategoryDetail.jsx'
 import TabBar from './components/TabBar.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/add" element={<Add />} />
           <Route path="/compare" element={<PriceCompare />} />
           <Route path="/receipt" element={<Receipt />} />
+          <Route path="/category/:name" element={<CategoryDetail />} />
         </Routes>
         <TabBar />
       </div>
