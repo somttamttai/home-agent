@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/박상민/ai-stock-trader/.venv/Scripts/**)",
+      "Read(//c/Users/박상민/ai-stock-trader/.venv/**)",
+      "Bash(/c/Users/박상민/ai-stock-trader/.venv/Scripts/python.exe:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(curl -s http://127.0.0.1:8000/api/health)",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/prices/compare?query=%ED%81%AC%EB%A6%AC%EB%84%A5%EC%8A%A4%203%EA%B2%B9%2030m&ply=3\")",
+      "Bash(curl -sv -X POST http://127.0.0.1:8000/api/consumables -H 'Content-Type: application/json' -d '{\"name\":\"TEST\",\"current_stock\":10}')",
+      "Bash(curl -s -X PATCH http://127.0.0.1:8000/api/consumables/2 -H 'Content-Type: application/json' -d '{\"current_stock\":15}')",
+      "Bash(curl -s -X DELETE \"http://127.0.0.1:8000/api/consumables/2\")",
+      "Bash(curl -s http://127.0.0.1:8000/api/consumables)"
+    ]
+  }
+}
