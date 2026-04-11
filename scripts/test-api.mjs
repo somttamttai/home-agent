@@ -104,16 +104,42 @@ if (tmpId) {
   );
 }
 
-// ── 5. GET /api/prices/compare ─────────────────────────────────────────
+// ── 5. GET /api/prices/compare (m unit — tissue) ───────────────────────
 {
   const q = encodeURIComponent('크리넥스 3겹 30m');
   const { status, body } = await call(prices, {
     method: 'GET', url: `/api/prices/compare?query=${q}&ply=3`,
   });
   const cheapest = body?.cheapest;
-  ok('prices compare',
-    status === 200 && body?.total > 0 && cheapest?.unit_per_m > 0,
-    `total=${body?.total}, valid=${body?.valid}, cheapest=${cheapest?.price}원 m당 ${cheapest?.unit_per_m}원 @ ${cheapest?.mall}`,
+  ok('prices compare (m unit)',
+    status === 200 && body?.total > 0 && cheapest?.unit_price > 0 && cheapest?.unit === 'm',
+    `sorted_by=${body?.sorted_by}, valid=${body?.valid}, cheapest=${cheapest?.price}원 ${cheapest?.unit_price}원/${cheapest?.unit}`,
+  );
+}
+
+// ── 5b. GET /api/prices/compare (ml unit — shampoo) ────────────────────
+{
+  const q = encodeURIComponent('팬틴 샴푸');
+  const { status, body } = await call(prices, {
+    method: 'GET', url: `/api/prices/compare?query=${q}`,
+  });
+  const cheapest = body?.cheapest;
+  ok('prices compare (ml unit)',
+    status === 200 && cheapest?.unit_price > 0 && cheapest?.unit === 'ml',
+    `cheapest=${cheapest?.price}원 ${cheapest?.unit_price}원/${cheapest?.unit}`,
+  );
+}
+
+// ── 5c. GET /api/prices/compare (매 unit — zipper bag) ─────────────────
+{
+  const q = encodeURIComponent('지퍼백');
+  const { status, body } = await call(prices, {
+    method: 'GET', url: `/api/prices/compare?query=${q}`,
+  });
+  const cheapest = body?.cheapest;
+  ok('prices compare (매 unit)',
+    status === 200 && cheapest?.unit_price > 0 && cheapest?.unit === '매',
+    `cheapest=${cheapest?.price}원 ${cheapest?.unit_price}원/${cheapest?.unit}`,
   );
 }
 

@@ -102,21 +102,38 @@ export async function lowStockAlerts() {
 }
 
 // ── prices ─────────────────────────────────────────────────────────────
+// 단위가격 (원/ml, 원/g, 원/매 등) 으로 정렬, 계산 불가능하면 가격 fallback.
 export async function comparePrices(query, ply = null) {
   if (!query || query.length < 2) throw new BadRequest('query too short');
   let items = await naver.search(query, { display: 100, sort: 'sim' });
   if (ply != null) {
     items = items.filter((i) => i.specs.ply === ply);
   }
-  const priced = items
-    .filter((i) => i.unit_per_m != null && i.unit_per_m >= 1 && i.unit_per_m <= 1000)
-    .sort((a, b) => a.unit_per_m - b.unit_per_m);
+
+  const withUnit = items
+    .filter((i) => i.unit_price != null && i.unit_price > 0)
+    .sort((a, b) => a.unit_price - b.unit_price);
+
+  if (withUnit.length > 0) {
+    return {
+      query,
+      total: items.length,
+      valid: withUnit.length,
+      sorted_by: 'unit_price',
+      cheapest: withUnit[0],
+      items: withUnit.slice(0, 20),
+    };
+  }
+
+  // Fallback: 단위가격을 계산할 수 있는 게 아무것도 없으면 가격순.
+  const byPrice = [...items].sort((a, b) => a.price - b.price);
   return {
     query,
     total: items.length,
-    valid: priced.length,
-    cheapest: priced[0] || null,
-    items: priced.slice(0, 20),
+    valid: 0,
+    sorted_by: 'price',
+    cheapest: byPrice[0] || null,
+    items: byPrice.slice(0, 20),
   };
 }
 
@@ -153,8 +170,13 @@ export async function refreshPrice(cid) {
     consumable_id: cid,
     mall_name: best.mall,
     price: best.price,
-    unit_price_per_meter: best.unit_per_m,
-    spec_parsed: best.specs,
+    // legacy column name; 이제는 단위 무관한 단위가격을 저장
+    unit_price_per_meter: best.unit_price,
+    spec_parsed: {
+      ...best.specs,
+      unit: best.unit,
+      total_size: best.total_size,
+    },
   });
   return { saved, best };
 }

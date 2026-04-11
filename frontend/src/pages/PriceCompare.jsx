@@ -10,14 +10,23 @@ const PLY_TABS = [
   { label: '3겹',  value: '3' },
 ]
 
-function specSummary(specs) {
-  if (!specs) return ''
-  const parts = []
-  if (specs.rolls)     parts.push(`${specs.rolls}롤`)
-  if (specs.length_m)  parts.push(`${specs.length_m}m`)
-  if (specs.ply)       parts.push(`${specs.ply}겹`)
-  if (specs.packs > 1) parts.push(`${specs.packs}팩`)
-  return parts.join(' × ')
+// 화장지/키친타올 (m 단위) → rolls × length × ply × packs
+// 그 외 (ml/g/매/개) → "총 N{unit}"
+function specSummary(item) {
+  if (!item) return ''
+  const { specs, unit, total_size } = item
+  if (unit === 'm' && specs?.rolls) {
+    const parts = []
+    if (specs.rolls)     parts.push(`${specs.rolls}롤`)
+    if (specs.length_m)  parts.push(`${specs.length_m}m`)
+    if (specs.ply)       parts.push(`${specs.ply}겹`)
+    if (specs.packs > 1) parts.push(`${specs.packs}팩`)
+    return parts.join(' × ')
+  }
+  if (total_size != null && unit) {
+    return `총 ${total_size}${unit}`
+  }
+  return ''
 }
 
 function rankLabel(idx) {
@@ -93,10 +102,8 @@ export default function PriceCompare() {
     const params = new URLSearchParams()
     params.set('name', query)
     if (best?.brand) params.set('brand', best.brand)
-    if (best?.specs) {
-      const s = specSummary(best.specs)
-      if (s) params.set('spec', s)
-    }
+    const s = specSummary(best)
+    if (s) params.set('spec', s)
     nav(`/add?${params}`)
   }
 
@@ -144,7 +151,7 @@ export default function PriceCompare() {
           <div className="empty">
             <div className="big-icon">💰</div>
             <div className="title">최저가를 찾아드려요</div>
-            <div>단위당(m당) 가격으로 비교해요</div>
+            <div>단위당 가격으로 비교해요 (원/ml, 원/g 등)</div>
           </div>
         )}
 
@@ -154,7 +161,10 @@ export default function PriceCompare() {
               <div className="label">검색어</div>
               <div className="q">{query}</div>
               <div className="stats">
-                총 {data.total}건 · 단위가격 계산 {data.valid}건
+                총 {data.total}건 ·{' '}
+                {data.sorted_by === 'unit_price'
+                  ? `단위가격 순 정렬 (${data.valid}건)`
+                  : '가격 기준 정렬'}
                 {ply && ` · ${ply}겹 필터`}
               </div>
             </div>
@@ -163,6 +173,7 @@ export default function PriceCompare() {
               <>
                 {data.items.map((it, idx) => {
                   const isTop = idx === 0
+                  const spec = specSummary(it)
                   return (
                     <div
                       key={`${it.productId || idx}-${it.mall}`}
@@ -177,9 +188,7 @@ export default function PriceCompare() {
                         <img src={it.image} alt="" loading="lazy" />
                         <div className="info">
                           <div className="title">{it.title}</div>
-                          {it.specs && specSummary(it.specs) && (
-                            <div className="spec-chip">{specSummary(it.specs)}</div>
-                          )}
+                          {spec && <div className="spec-chip">{spec}</div>}
                         </div>
                       </div>
 
@@ -188,7 +197,11 @@ export default function PriceCompare() {
                           <div className="price-big">
                             {it.price.toLocaleString()}<span className="won">원</span>
                           </div>
-                          <div className="unit-big">m당 {it.unit_per_m}원</div>
+                          {it.unit_price != null && it.unit_price > 0 && (
+                            <div className="unit-big">
+                              {it.unit_price}원/{it.unit}
+                            </div>
+                          )}
                         </div>
                         <a
                           className={`btn small ${isTop ? '' : 'tonal'}`}
@@ -215,7 +228,7 @@ export default function PriceCompare() {
             ) : (
               <div className="empty">
                 <div className="big-icon">🔍</div>
-                <div className="title">단위가격을 계산할 수 있는 상품이 없어요</div>
+                <div className="title">검색 결과가 없어요</div>
                 {ply && <div>다른 겹수로 검색해보세요</div>}
               </div>
             )}

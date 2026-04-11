@@ -90,15 +90,30 @@ def compare_prices(query: str | None, ply: int | None = None) -> dict:
     items = naver.search(query, display=100, sort="sim")
     if ply is not None:
         items = [i for i in items if i["specs"].get("ply") == ply]
-    priced = [i for i in items
-              if i["unit_per_m"] and 1 <= i["unit_per_m"] <= 1000]
-    priced.sort(key=lambda x: x["unit_per_m"])
+    with_unit = [
+        i for i in items
+        if i["unit_price"] is not None and i["unit_price"] > 0
+    ]
+    with_unit.sort(key=lambda x: x["unit_price"])
+
+    if with_unit:
+        return {
+            "query": query,
+            "total": len(items),
+            "valid": len(with_unit),
+            "sorted_by": "unit_price",
+            "cheapest": with_unit[0],
+            "items": with_unit[:20],
+        }
+
+    by_price = sorted(items, key=lambda x: x["price"])
     return {
         "query": query,
         "total": len(items),
-        "valid": len(priced),
-        "cheapest": priced[0] if priced else None,
-        "items": priced[:20],
+        "valid": 0,
+        "sorted_by": "price",
+        "cheapest": by_price[0] if by_price else None,
+        "items": by_price[:20],
     }
 
 
@@ -133,8 +148,13 @@ def refresh_price(cid: int) -> dict:
         "consumable_id": cid,
         "mall_name": best["mall"],
         "price": best["price"],
-        "unit_price_per_meter": best["unit_per_m"],
-        "spec_parsed": best["specs"],
+        # legacy column name — 이제는 단위 무관한 단위가격 저장
+        "unit_price_per_meter": best["unit_price"],
+        "spec_parsed": {
+            **best["specs"],
+            "unit": best["unit"],
+            "total_size": best["total_size"],
+        },
     })
     return {"saved": row, "best": best}
 
