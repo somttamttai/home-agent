@@ -57,8 +57,27 @@ export function useConsumables() {
   }, [toast])
 
   const onRefresh = useCallback((item) => {
-    const q = [item.name, item.spec].filter(Boolean).join(' ')
-    const params = new URLSearchParams({ query: q })
+    // 검색어 빌드 규칙:
+    //   - spec 은 항상 제외 (네이버 검색 noise 제거)
+    //   - brand 가 "기타" 거나 비어있으면 → 상품명만
+    //   - 상품명에 brand 가 이미 포함되어 있으면 → 상품명만
+    //   - 상품명이 2단어 이상이면 → 이미 브랜드 컨텍스트 포함 가능성 → 상품명만
+    //   - 그 외 단일 단어 상품명 + 구체 브랜드 → "brand name"
+    const name = (item.name || '').trim()
+    const brand = (item.brand || '').trim()
+
+    let query = name
+    if (
+      brand &&
+      brand !== '기타' &&
+      !name.includes(brand) &&
+      name.split(/\s+/).length < 2
+    ) {
+      query = `${brand} ${name}`
+    }
+
+    const params = new URLSearchParams({ query })
+    // 휴지/화장지 류는 spec 의 겹수만 ply 필터로 전달
     if (item.spec && /(\d)\s*겹/.test(item.spec)) {
       params.set('ply', item.spec.match(/(\d)\s*겹/)[1])
     }
