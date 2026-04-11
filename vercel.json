@@ -4,6 +4,11 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "installCommand": "pip install requests",
   "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/*.py": {
+      "runtime": "python3.11"
+    }
+  },
   "rewrites": [
     { "source": "/api/consumables/(.*)", "destination": "/api/consumables" },
     { "source": "/api/prices/(.*)",      "destination": "/api/prices" },
