@@ -5,7 +5,7 @@ export default function AlertBadge({ daysLeft, reorderPoint }) {
   const danger = daysLeft <= reorderPoint
   return (
     <span className={`alert-badge ${danger ? 'danger' : 'safe'}`}>
-      {danger ? '⚠️ 주문필요' : '✅ 여유'}
+      {danger ? '주문 필요' : '여유'}
     </span>
   )
 }

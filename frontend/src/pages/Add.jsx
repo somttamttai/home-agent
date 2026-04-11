@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
 
 const FIELDS = [
@@ -10,19 +11,20 @@ const FIELDS = [
   { key: 'spec',          label: '규격',          type: 'text',
     placeholder: '예: 3겹 30m 30롤' },
   { key: 'max_stock',     label: '최대 보관 수량', type: 'number',
-    placeholder: '예: 30', step: 'any' },
+    placeholder: '30', step: 'any' },
   { key: 'current_stock', label: '현재 재고',     type: 'number', required: true,
-    placeholder: '예: 20', step: 'any' },
+    placeholder: '20', step: 'any' },
   { key: 'daily_usage',   label: '일일 소비량',   type: 'number',
-    placeholder: '예: 0.5 (하루 반롤)', step: 'any' },
+    placeholder: '0.5 (하루 반롤)', step: 'any' },
   { key: 'reorder_point', label: '재주문 시점 (일)', type: 'number',
-    placeholder: '예: 7 (7일치 남았을 때 알림)', step: 'any' },
+    placeholder: '7 (7일치 남았을 때 알림)', step: 'any' },
 ]
 
 export default function Add() {
   const nav = useNavigate()
   const toast = useToast()
   const [sp] = useSearchParams()
+
   const [form, setForm] = useState({
     name: sp.get('name') || '',
     brand: sp.get('brand') || '',
@@ -68,21 +70,25 @@ export default function Add() {
 
   return (
     <form onSubmit={onSubmit}>
-      <div className="card">
-        <b>➕ 소모품 추가</b>
-        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-          재주문 시점(일)은 남은 일수가 이 값 이하일 때 알림을 받아요.
+      <PageHeader title="소모품 추가" />
+      <div className="page">
+        <div style={{ padding: '4px 4px 20px' }}>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em' }}>
+            어떤 소모품을 추가할까요?
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-sub)', marginTop: 6 }}>
+            이름만 있어도 저장돼요. 사용량을 넣으면 소진 예상일을 알려드려요.
+          </div>
         </div>
-      </div>
 
-      <div className="card">
         {FIELDS.map((f) => (
-          <label key={f.key} className="form-row">
-            <span>
+          <div key={f.key} className="form-field">
+            <label className="label" htmlFor={`field-${f.key}`}>
               {f.label}
-              {f.required && <span style={{ color: '#ef4444' }}> *</span>}
-            </span>
+              {f.required && <span className="required">*</span>}
+            </label>
             <input
+              id={`field-${f.key}`}
               type={f.type}
               value={form[f.key]}
               onChange={setField(f.key)}
@@ -91,22 +97,17 @@ export default function Add() {
               inputMode={f.type === 'number' ? 'decimal' : undefined}
               required={f.required}
             />
-          </label>
+          </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="bottom-action">
         <button
-          type="button"
-          className="btn secondary"
-          style={{ flex: 1 }}
-          onClick={() => nav('/')}
+          type="submit"
+          className="btn block lg"
           disabled={saving}
         >
-          취소
-        </button>
-        <button type="submit" className="btn" style={{ flex: 2 }} disabled={saving}>
-          {saving ? '저장중…' : '💾 저장'}
+          {saving ? '저장중…' : '💾 저장하기'}
         </button>
       </div>
     </form>

@@ -18,7 +18,11 @@
       "Bash(git push:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(curl -sI http://localhost:4173/)",
+      "Bash(curl -s http://localhost:4173/)",
+      "Bash(curl -s http://localhost:4173/assets/index-CKvHdHpM.css)",
+      "Bash(curl -s http://localhost:4173/assets/index-CEHJwHgr.js)"
     ]
   }
 }
