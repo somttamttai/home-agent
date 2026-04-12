@@ -74,6 +74,45 @@ const TEMPLATE_GROUPS = [
       { icon: '👔',  name: '옷걸이', brand: '기타', spec: '10개', daily_usage: 0.01, reorder_point: 90 },
     ],
   },
+  {
+    category: '건강',
+    icon: '💊',
+    templates: [
+      { icon: '🩹', name: '밴드',     brand: '', spec: '20매',  daily_usage: 0.01, reorder_point: 30 },
+      { icon: '😷', name: '마스크',   brand: '', spec: '50매',  daily_usage: 0.03, reorder_point: 7  },
+      { icon: '🧴', name: '손소독제', brand: '', spec: '500ml', daily_usage: 0.03, reorder_point: 7  },
+      { icon: '🩹', name: '소독솜',   brand: '', spec: '40매',  daily_usage: 0.02, reorder_point: 14 },
+    ],
+  },
+  {
+    category: '반려동물',
+    icon: '🐾',
+    templates: [
+      { icon: '🐾', name: '펫패드',       brand: '', spec: '50매',  daily_usage: 1.0,  reorder_point: 3  },
+      { icon: '🍖', name: '사료',         brand: '', spec: '2kg',   daily_usage: 1.0,  reorder_point: 5  },
+      { icon: '🦴', name: '간식',         brand: '', spec: '1봉',   daily_usage: 0.3,  reorder_point: 7  },
+      { icon: '🧴', name: '반려동물샴푸', brand: '', spec: '500ml', daily_usage: 0.03, reorder_point: 30 },
+      { icon: '🗑️', name: '배변봉투',    brand: '', spec: '100매', daily_usage: 0.5,  reorder_point: 5  },
+      { icon: '🪣', name: '모래/펫시트',  brand: '', spec: '1봉',   daily_usage: 0.1,  reorder_point: 14 },
+      { icon: '💊', name: '구충제',       brand: '', spec: '1개',   daily_usage: 0.01, reorder_point: 90 },
+      { icon: '🪥', name: '칫솔(펫용)',   brand: '', spec: '1개',   daily_usage: 0.03, reorder_point: 30 },
+    ],
+  },
+  {
+    category: '유아용품',
+    icon: '🍼',
+    templates: [
+      { icon: '🧒', name: '기저귀',       brand: '', spec: '1팩',     daily_usage: 0.14, reorder_point: 3  },
+      { icon: '🧻', name: '아기물티슈',   brand: '', spec: '80매',    daily_usage: 0.2,  reorder_point: 3  },
+      { icon: '🗑️', name: '기저귀봉투',  brand: '', spec: '200매',   daily_usage: 0.07, reorder_point: 5  },
+      { icon: '🍼', name: '분유',         brand: '', spec: '800g',    daily_usage: 0.07, reorder_point: 5  },
+      { icon: '🧴', name: '젖병세정제',   brand: '', spec: '500ml',   daily_usage: 0.03, reorder_point: 7  },
+      { icon: '🧴', name: '아기샴푸',     brand: '', spec: '350ml',   daily_usage: 0.03, reorder_point: 7  },
+      { icon: '🧴', name: '아기로션',     brand: '', spec: '300ml',   daily_usage: 0.05, reorder_point: 5  },
+      { icon: '🧴', name: '아기바디워시', brand: '', spec: '350ml',   daily_usage: 0.03, reorder_point: 7  },
+      { icon: '🧴', name: '아기세탁세제', brand: '', spec: '1.5L',    daily_usage: 0.03, reorder_point: 7  },
+    ],
+  },
 ]
 
 const FIELDS = [
