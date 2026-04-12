@@ -124,10 +124,13 @@ export default function Home() {
     return c
   }, [items, catKeys])
 
-  const visibleCategories = useMemo(
-    () => catKeys.filter((c) => counts[c]?.total > 0),
-    [counts, catKeys],
-  )
+  const visibleCategories = useMemo(() => {
+    const withItems = catKeys.filter((c) => counts[c]?.total > 0)
+    for (const c of customCategories) {
+      if (!withItems.includes(c.key)) withItems.push(c.key)
+    }
+    return withItems
+  }, [counts, catKeys, customCategories])
 
   const themeIcon = theme === 'dark' ? '☀️' : '🌙'
   const safe = items.length - low.length
@@ -249,7 +252,7 @@ export default function Home() {
             <div className="section-title">카테고리</div>
             <div className="category-grid">
               {visibleCategories.map((cat) => {
-                const c = counts[cat]
+                const c = counts[cat] || { total: 0, low: 0 }
                 const hasLow = c.low > 0
                 const isCustom = customKeys.has(cat)
                 return (
@@ -259,7 +262,11 @@ export default function Home() {
                     <div className="icon">{getIcon(cat)}</div>
                     <div className="name">{cat}</div>
                     <div className="total">{c.total}<span className="unit">개</span></div>
-                    <div className="breakdown">여유 {c.total - c.low} · 부족 {c.low}</div>
+                    {c.total > 0 ? (
+                      <div className="breakdown">여유 {c.total - c.low} · 부족 {c.low}</div>
+                    ) : (
+                      <div className="breakdown" style={{ color: 'var(--text-hint)' }}>비어있음</div>
+                    )}
                     {isCustom && (
                       <button type="button" className="cat-more-btn"
                         onClick={(e) => { e.stopPropagation(); setSheetCat(cat); setConfirmDelete(false) }}>
