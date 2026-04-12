@@ -4,6 +4,7 @@ import { useTheme } from '../hooks/useTheme.js'
 import { useConsumables } from '../hooks/useConsumables.js'
 import { useCategories } from '../hooks/useCategories.jsx'
 import Modal from '../components/Modal.jsx'
+import BottomSheet from '../components/BottomSheet.jsx'
 import { useToast } from '../components/Toast.jsx'
 
 const EMOJI_PICKS = ['🛁','🍳','🧺','🧹','🛏','👔','🍼','💊','🐾','🚗','🏋️','📚','🎮','🐶','🧴','🪥','🧽','🧤','🌸','☕']
@@ -29,12 +30,17 @@ function formatDday(daysLeft) {
   return `D-${Math.floor(daysLeft)}`
 }
 
-function AddCategoryModal({ open, onClose, onSave }) {
+function CategoryModal({ open, onClose, onSave, initial }) {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState('📦')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { if (open) { setName(''); setIcon('📦') } }, [open])
+  useEffect(() => {
+    if (open) {
+      setName(initial?.name || '')
+      setIcon(initial?.icon || '📦')
+    }
+  }, [open, initial])
 
   const handleSave = async () => {
     if (!name.trim()) return
@@ -43,13 +49,13 @@ function AddCategoryModal({ open, onClose, onSave }) {
       await onSave(name.trim(), icon)
       onClose()
     } catch (e) {
-      console.error('카테고리 추가 실패:', e)
+      console.error(e)
     }
     setSaving(false)
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="카테고리 추가"
+    <Modal open={open} onClose={onClose} title={initial ? '카테고리 수정' : '카테고리 추가'}
       actions={<>
         <button type="button" className="btn secondary" onClick={onClose}>취소</button>
         <button type="button" className="btn" onClick={handleSave} disabled={saving || !name.trim()}>
@@ -78,9 +84,13 @@ export default function Home() {
   const nav = useNavigate()
   const { theme, toggle } = useTheme()
   const { items, loading, error, reload, onRefresh } = useConsumables()
-  const { categories, getIcon, addCategory } = useCategories()
+  const { categories, getIcon, customCategories, addCategory, updateCategory, deleteCategory } = useCategories()
   const toast = useToast()
+
   const [addCatOpen, setAddCatOpen] = useState(false)
+  const [editCat, setEditCat] = useState(null)
+  const [sheetCat, setSheetCat] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     if (!('Notification' in window)) return
@@ -102,6 +112,7 @@ export default function Home() {
   }, [low])
 
   const catKeys = useMemo(() => categories.map((c) => c.key), [categories])
+  const customKeys = useMemo(() => new Set(customCategories.map((c) => c.key)), [customCategories])
 
   const counts = useMemo(() => {
     const c = {}
@@ -131,6 +142,35 @@ export default function Home() {
       toast(`❌ ${e.message}`)
       throw e
     }
+  }
+
+  const onEditCat = async (name, icon) => {
+    if (!editCat) return
+    try {
+      await updateCategory(editCat, name, icon)
+      toast(`✅ "${name}" 수정됨`)
+    } catch (e) {
+      toast(`❌ ${e.message}`)
+      throw e
+    }
+  }
+
+  const onDeleteCat = async () => {
+    if (!sheetCat) return
+    try {
+      await deleteCategory(sheetCat)
+      toast(`🗑 "${sheetCat}" 삭제됨`)
+      setSheetCat(null)
+      setConfirmDelete(false)
+    } catch (e) {
+      toast(`❌ ${e.message}`)
+    }
+  }
+
+  const openCatSheet = (e, cat) => {
+    e.stopPropagation()
+    setSheetCat(cat)
+    setConfirmDelete(false)
   }
 
   return (
@@ -233,6 +273,7 @@ export default function Home() {
               {visibleCategories.map((cat) => {
                 const c = counts[cat]
                 const hasLow = c.low > 0
+                const isCustom = customKeys.has(cat)
                 return (
                   <button key={cat} type="button"
                     className={`category-grid-card ${hasLow ? 'has-low' : ''}`}
@@ -241,6 +282,10 @@ export default function Home() {
                     <div className="name">{cat}</div>
                     <div className="total">{c.total}<span className="unit">개</span></div>
                     <div className="breakdown">여유 {c.total - c.low} · 부족 {c.low}</div>
+                    {isCustom && (
+                      <button type="button" className="cat-more-btn"
+                        onClick={(e) => openCatSheet(e, cat)}>⋯</button>
+                    )}
                   </button>
                 )
               })}
@@ -254,7 +299,51 @@ export default function Home() {
         )}
       </div>
 
-      <AddCategoryModal open={addCatOpen} onClose={() => setAddCatOpen(false)} onSave={onAddCat} />
+      {/* 카테고리 추가 모달 */}
+      <CategoryModal open={addCatOpen} onClose={() => setAddCatOpen(false)} onSave={onAddCat} />
+
+      {/* 카테고리 수정 모달 */}
+      <CategoryModal
+        open={!!editCat}
+        onClose={() => setEditCat(null)}
+        onSave={onEditCat}
+        initial={editCat ? { name: editCat, icon: getIcon(editCat) } : null}
+      />
+
+      {/* 카테고리 관리 바텀시트 */}
+      <BottomSheet open={!!sheetCat} onClose={() => { setSheetCat(null); setConfirmDelete(false) }}
+        title={sheetCat ? `${getIcon(sheetCat)} ${sheetCat}` : ''}>
+        {!confirmDelete ? (
+          <>
+            <button type="button" className="sheet-item"
+              onClick={() => { setEditCat(sheetCat); setSheetCat(null) }}>
+              <span className="icon">✏️</span>
+              <span className="label">이름/이모지 수정</span>
+              <span className="chev">›</span>
+            </button>
+            <div className="sheet-divider" />
+            <button type="button" className="sheet-item danger"
+              onClick={() => setConfirmDelete(true)}>
+              <span className="icon">🗑️</span>
+              <span className="label">카테고리 삭제</span>
+            </button>
+          </>
+        ) : (
+          <div className="sheet-confirm">
+            <div className="confirm-title">정말 삭제할까요?</div>
+            <div className="confirm-msg">
+              "{sheetCat}" 카테고리를 삭제합니다.<br />
+              소모품은 "기타"로 이동돼요.
+            </div>
+            <div className="confirm-actions">
+              <button type="button" className="btn secondary"
+                onClick={() => setConfirmDelete(false)}>취소</button>
+              <button type="button" className="btn danger"
+                onClick={onDeleteCat}>삭제</button>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   )
 }

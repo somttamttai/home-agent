@@ -9,15 +9,15 @@ export const SENSE_LEVELS = [
 export function senseToStock(senseKey, dailyUsage) {
   const du = Number(dailyUsage) || 0.03
   const level = SENSE_LEVELS.find((l) => l.key === senseKey)
-  if (!level) return du * 30
-  return Math.round(du * level.days * 100) / 100
+  if (!level) return Math.round(du * 30)
+  return Math.round(du * level.days)
 }
 
 export function stockToSense(daysLeft) {
   if (daysLeft == null) return 'good'
-  if (daysLeft <= 7) return 'critical'
-  if (daysLeft <= 14) return 'low'
-  if (daysLeft <= 30) return 'good'
+  if (daysLeft < 7.5) return 'critical'
+  if (daysLeft < 14.5) return 'low'
+  if (daysLeft < 30.5) return 'good'
   return 'plenty'
 }
 

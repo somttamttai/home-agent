@@ -1089,6 +1089,19 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 .category-grid-card.has-low .breakdown {
   color: #FF9500;
 }
+.cat-more-btn {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 28px; height: 28px;
+  border: none; background: none;
+  font-size: 14px;
+  color: var(--text-hint);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.cat-more-btn:active { background: var(--border); }
+.category-grid-card { position: relative; }
 .category-grid-card.add-card {
   border: 2px dashed var(--border-strong);
   background: transparent;
@@ -2009,16 +2022,6 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 .ob-cat-card.selected {
   border-color: var(--primary);
   background: var(--primary-light);
-}
-.ob-cat-card.locked {
-  opacity: 0.85;
-  cursor: default;
-}
-.ob-cat-card .lock-badge {
-  font-size: 12px;
-  position: absolute;
-  top: 6px;
-  right: 6px;
 }
 .ob-cat-card {
   position: relative;

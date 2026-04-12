@@ -152,13 +152,13 @@ function StepFamily({ family, setFamily }) {
 
 // ── 카테고리 선택 ────────────────────────────────────────────
 function StepCategories({ selected, setSelected, family }) {
-  const autoLocked = useMemo(() => {
-    const locked = {}
+  const autoSuggest = useMemo(() => {
+    const suggest = {}
     for (const cat of ALL_CATEGORIES) {
-      if (cat.auto === 'infants' && family.infants > 0) locked[cat.key] = true
-      if (cat.auto === 'pets' && family.pets > 0) locked[cat.key] = true
+      if (cat.auto === 'infants' && family.infants > 0) suggest[cat.key] = true
+      if (cat.auto === 'pets' && family.pets > 0) suggest[cat.key] = true
     }
-    return locked
+    return suggest
   }, [family])
 
   const cats = useMemo(
@@ -170,15 +170,17 @@ function StepCategories({ selected, setSelected, family }) {
     [family],
   )
 
+  const [autoApplied, setAutoApplied] = useState(false)
   useEffect(() => {
-    const toAdd = Object.keys(autoLocked).filter((k) => !selected.includes(k))
+    if (autoApplied) return
+    const toAdd = Object.keys(autoSuggest).filter((k) => !selected.includes(k))
     if (toAdd.length > 0) {
       setSelected((s) => [...s, ...toAdd])
     }
-  }, [autoLocked, selected, setSelected])
+    setAutoApplied(true)
+  }, [autoSuggest, selected, setSelected, autoApplied])
 
   const toggle = (key) => {
-    if (autoLocked[key]) return
     setSelected((s) => s.includes(key) ? s.filter((k) => k !== key) : [...s, key])
   }
 
@@ -187,22 +189,20 @@ function StepCategories({ selected, setSelected, family }) {
       <div className="ob-title">어떤 공간의 소모품을 관리할까요?</div>
       <div className="ob-cat-grid">
         {cats.map((c) => {
-          const isLocked = !!autoLocked[c.key]
           const isSelected = selected.includes(c.key)
           return (
             <button key={c.key} type="button"
-              className={`ob-cat-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`}
+              className={`ob-cat-card ${isSelected ? 'selected' : ''}`}
               onClick={() => toggle(c.key)}>
               <span className="icon">{c.icon}</span>
               <span className="label">{c.key}</span>
-              {isLocked && <span className="lock-badge">🔒</span>}
             </button>
           )
         })}
       </div>
-      {Object.keys(autoLocked).length > 0 && (
+      {Object.keys(autoSuggest).length > 0 && (
         <div className="ob-hint-card" style={{ marginTop: 12 }}>
-          🔒 가족 구성원에 맞춰 자동 추가된 카테고리예요
+          가족 구성원에 맞춰 자동 추가됐어요 (해제 가능)
         </div>
       )}
       {selected.length === 0 && (

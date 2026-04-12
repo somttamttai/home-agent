@@ -37,10 +37,17 @@ export default async function handler(req, res) {
       if (current.some((c) => c.key === name)) throw new BadRequest('이미 있는 카테고리입니다');
 
       const updated = [...current, { key: name, icon }];
-      await supabaseAdmin(`households?id=eq.${householdId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ custom_categories: updated }),
-      });
+      try {
+        await supabaseAdmin(`households?id=eq.${householdId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ custom_categories: updated }),
+        });
+      } catch (err) {
+        if (err.message?.includes('custom_categories')) {
+          throw new BadRequest('DB에 custom_categories 컬럼이 없습니다. SQL 마이그레이션을 실행해주세요.');
+        }
+        throw err;
+      }
       return sendJson(res, { custom: updated }, 201);
     }
 
