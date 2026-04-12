@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
+import { useCategories } from '../hooks/useCategories.jsx'
 import { effectivePeople, formatPeople } from '../utils/family.js'
 import { expectedDays } from '../utils/consumption.js'
 
@@ -38,6 +39,7 @@ export default function Settings() {
   const toast = useToast()
   const nav = useNavigate()
   const { authHeaders, household, user, signOut } = useAuth()
+  const { refreshFamily } = useCategories()
   const [form, setForm] = useState({ adults: 2, children: 0, infants: 0, pets: 0 })
   const [initial, setInitial] = useState({ adults: 2, children: 0, infants: 0, pets: 0 })
   const [loaded, setLoaded] = useState(false)
@@ -75,6 +77,7 @@ export default function Settings() {
       })
       if (!r.ok) throw new Error()
       setInitial({ ...form })
+      await refreshFamily()
       toast('설정이 저장됐어요 ✅')
     } catch {
       toast('❌ 저장에 실패했어요')

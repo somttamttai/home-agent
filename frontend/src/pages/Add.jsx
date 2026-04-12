@@ -7,7 +7,8 @@ import { useCategories } from '../hooks/useCategories.jsx'
 import { calcDailyUsage, expectedDays, getBaselineDays } from '../utils/consumption.js'
 import { effectivePeople, formatPeople } from '../utils/family.js'
 
-const TEMPLATE_GROUPS = [
+// 이전 호환용 — 실제 사용은 useCategories().templateGroups
+const LEGACY_TEMPLATE_GROUPS = [
   {
     category: '욕실',
     icon: '🛁',
@@ -144,17 +145,11 @@ function emptyManual(sp) {
 function ManualForm({ initial, onSaved }) {
   const toast = useToast()
   const { authHeaders } = useAuth()
-  const { categoryKeys } = useCategories()
+  const { categoryKeys, templateGroups, family: famData } = useCategories()
   const [form, setForm] = useState(initial)
   const [saving, setSaving] = useState(false)
-  const [family, setFamily] = useState({ adults: 2, children: 0 })
 
-  useEffect(() => {
-    fetch('/api/family', { headers: authHeaders() })
-      .then((r) => r.json())
-      .then((data) => setFamily({ adults: data.adults ?? 2, children: data.children ?? 0 }))
-      .catch(() => {})
-  }, [authHeaders])
+  const family = { adults: famData.adults, children: famData.children }
   const people = effectivePeople(family)
 
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -220,7 +215,7 @@ function ManualForm({ initial, onSaved }) {
   return (
     <form onSubmit={onSubmit}>
       <div className="section-title" style={{ paddingTop: 0 }}>템플릿에서 빠르게 추가하기</div>
-      {TEMPLATE_GROUPS.map((group) => (
+      {templateGroups.map((group) => (
         <div className="template-group" key={group.category}>
           <div className="template-group-header">
             <span className="template-group-icon">{group.icon}</span>
