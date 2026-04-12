@@ -12,6 +12,7 @@ import HouseholdSetup from './pages/HouseholdSetup.jsx'
 import InviteCode from './pages/InviteCode.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 import TabBar from './components/TabBar.jsx'
+import Sidebar from './components/Sidebar.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 
 function AppRoutes() {
@@ -33,18 +34,21 @@ function AppRoutes() {
   if (!household.onboarded) return <Onboarding />
 
   return (
-    <div className="app">
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/scan" element={<Scan />} />
-        <Route path="/add" element={<Add />} />
-        <Route path="/compare" element={<PriceCompare />} />
-        <Route path="/receipt" element={<Receipt />} />
-        <Route path="/category/:name" element={<CategoryDetail />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/invite" element={<InviteCode />} />
-      </Routes>
-      <TabBar />
+    <div className="app-shell">
+      <Sidebar />
+      <div className="app">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/scan" element={<Scan />} />
+          <Route path="/add" element={<Add />} />
+          <Route path="/compare" element={<PriceCompare />} />
+          <Route path="/receipt" element={<Receipt />} />
+          <Route path="/category/:name" element={<CategoryDetail />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/invite" element={<InviteCode />} />
+        </Routes>
+        <TabBar />
+      </div>
     </div>
   )
 }

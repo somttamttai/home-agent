@@ -63,16 +63,18 @@ export default function CategoryDetail() {
                 </span>
               )}
             </div>
-            {filtered.map((it) => (
-              <StockCard
-                key={it.id}
-                item={it}
-                onRefresh={onRefresh}
-                onStockChange={onStockChange}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-              />
-            ))}
+            <div className="stock-card-list">
+              {filtered.map((it) => (
+                <StockCard
+                  key={it.id}
+                  item={it}
+                  onRefresh={onRefresh}
+                  onStockChange={onStockChange}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                />
+              ))}
+            </div>
           </>
         )}
       </div>
