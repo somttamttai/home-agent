@@ -140,9 +140,21 @@ export async function search(query, { display = 20, sort = 'sim' } = {}) {
     const unit = detectUnit(title);
     const totalSize = parseTotalSize(title, unit);
     const unitPrice = calcUnitPrice(price, totalSize);
+
+    // 배송비 추출
+    let shipping = null;
+    if (it.delivery != null && it.delivery !== '') {
+      const deliveryVal = parseInt(it.delivery, 10);
+      if (!Number.isNaN(deliveryVal)) shipping = deliveryVal;
+    }
+
+    const total = price + (shipping ?? 0);
+
     return {
       title,
       price,
+      shipping,
+      total,
       mall: it.mallName,
       link: it.link,
       image: it.image,

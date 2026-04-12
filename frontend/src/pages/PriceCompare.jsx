@@ -12,8 +12,6 @@ const PLY_TABS = [
   { label: '3겹',  value: '3' },
 ]
 
-// 화장지/키친타올 (m 단위) → rolls × length × ply × packs
-// 그 외 (ml/g/매/개) → "총 N{unit}"
 function specSummary(item) {
   if (!item) return ''
   const { specs, unit, total_size } = item
@@ -36,6 +34,12 @@ function rankLabel(idx) {
   if (idx === 1) return '🥈 2위'
   if (idx === 2) return '🥉 3위'
   return `${idx + 1}위`
+}
+
+function ShippingLabel({ shipping }) {
+  if (shipping === 0) return <span className="shipping free">무료 🚚</span>
+  if (shipping != null) return <span className="shipping">{shipping.toLocaleString()}원</span>
+  return <span className="shipping unknown">별도 확인 필요</span>
 }
 
 export default function PriceCompare() {
@@ -104,7 +108,6 @@ export default function PriceCompare() {
 
   const onSearch = (e) => {
     e?.preventDefault()
-    // 직접 검색 시에는 brand 초기화 (사용자가 자유 검색)
     setBrand('')
     writeUrl(query, ply, '')
     runSearch(query, ply, '')
@@ -188,7 +191,7 @@ export default function PriceCompare() {
           <div className="empty">
             <div className="big-icon">💰</div>
             <div className="title">최저가를 찾아드려요</div>
-            <div>단위당 가격으로 비교해요 (원/ml, 원/g 등)</div>
+            <div>배송비 포함 총합으로 비교해요</div>
           </div>
         )}
 
@@ -198,10 +201,7 @@ export default function PriceCompare() {
               <div className="label">검색어</div>
               <div className="q">{query}</div>
               <div className="stats">
-                총 {data.total}건 ·{' '}
-                {data.sorted_by === 'unit_price'
-                  ? `단위가격 순 정렬 (${data.valid}건)`
-                  : '가격 기준 정렬'}
+                총 {data.total}건 · 배송비 포함 총합 순 ({data.valid}건)
                 {ply && ` · ${ply}겹 필터`}
               </div>
             </div>
@@ -211,22 +211,14 @@ export default function PriceCompare() {
                 <span className="text">
                   🏷️ <strong>{brand}</strong> 브랜드 기준
                 </span>
-                <button
-                  type="button"
-                  className="link-btn"
-                  onClick={onShowAllBrands}
-                >
+                <button type="button" className="link-btn" onClick={onShowAllBrands}>
                   전체 브랜드 보기
                 </button>
               </div>
             ) : myBrand ? (
               <div className="brand-banner">
                 <span className="text">전체 브랜드 비교 중</span>
-                <button
-                  type="button"
-                  className="link-btn"
-                  onClick={onShowMyBrand}
-                >
+                <button type="button" className="link-btn" onClick={onShowMyBrand}>
                   🏷️ {myBrand} 브랜드만 보기
                 </button>
               </div>
@@ -237,6 +229,7 @@ export default function PriceCompare() {
                 {data.items.map((it, idx) => {
                   const isTop = idx === 0
                   const spec = specSummary(it)
+                  const displayTotal = it.price + (it.shipping ?? 0)
                   return (
                     <div
                       key={`${it.productId || idx}-${it.mall}`}
@@ -255,17 +248,28 @@ export default function PriceCompare() {
                         </div>
                       </div>
 
-                      <div className="rank-price">
-                        <div>
-                          <div className="price-big">
-                            {it.price.toLocaleString()}<span className="won">원</span>
-                          </div>
-                          {it.unit_price != null && it.unit_price > 0 && (
-                            <div className="unit-big">
-                              {it.unit_price}원/{it.unit}
-                            </div>
-                          )}
+                      <div className="rank-breakdown">
+                        <div className="row">
+                          <span className="label">상품가</span>
+                          <span className="val">{it.price.toLocaleString()}원</span>
                         </div>
+                        <div className="row">
+                          <span className="label">배송비</span>
+                          <ShippingLabel shipping={it.shipping} />
+                        </div>
+                        <div className="row total">
+                          <span className="label">총합</span>
+                          <span className="val">{displayTotal.toLocaleString()}원</span>
+                        </div>
+                        {it.unit_price != null && it.unit_price > 0 && (
+                          <div className="row unit">
+                            <span className="label">단위가격</span>
+                            <span className="val">{it.unit_price}원/{it.unit}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="rank-action">
                         <a
                           className={`btn small ${isTop ? '' : 'tonal'}`}
                           href={it.link}

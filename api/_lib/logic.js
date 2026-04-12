@@ -107,6 +107,15 @@ export async function lowStockAlerts(householdId = null) {
 }
 
 // ── prices ─────────────────────────────────────────────────────────────
+// 배송비 불명 시 보수적 추정값
+const ASSUMED_SHIPPING = 3000;
+
+function sortTotal(a, b) {
+  const aTotal = a.price + (a.shipping ?? ASSUMED_SHIPPING);
+  const bTotal = b.price + (b.shipping ?? ASSUMED_SHIPPING);
+  return aTotal - bTotal;
+}
+
 export async function comparePrices(query, ply = null) {
   if (!query || query.length < 2) throw new BadRequest('query too short');
   let items = await naver.search(query, { display: 100, sort: 'sim' });
@@ -116,27 +125,27 @@ export async function comparePrices(query, ply = null) {
 
   const withUnit = items
     .filter((i) => i.unit_price != null && i.unit_price > 0)
-    .sort((a, b) => a.unit_price - b.unit_price);
+    .sort(sortTotal);
 
   if (withUnit.length > 0) {
     return {
       query,
       total: items.length,
       valid: withUnit.length,
-      sorted_by: 'unit_price',
+      sorted_by: 'total',
       cheapest: withUnit[0],
       items: withUnit.slice(0, 20),
     };
   }
 
-  const byPrice = [...items].sort((a, b) => a.price - b.price);
+  const byTotal = [...items].sort(sortTotal);
   return {
     query,
     total: items.length,
     valid: 0,
-    sorted_by: 'price',
-    cheapest: byPrice[0] || null,
-    items: byPrice.slice(0, 20),
+    sorted_by: 'total',
+    cheapest: byTotal[0] || null,
+    items: byTotal.slice(0, 20),
   };
 }
 

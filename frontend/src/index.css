@@ -705,6 +705,53 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   margin-top: 4px;
 }
 
+/* breakdown table */
+.rank-breakdown {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 10px;
+}
+.rank-breakdown .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+}
+.rank-breakdown .row .label {
+  color: var(--text-sub);
+  font-weight: 600;
+}
+.rank-breakdown .row .val {
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.rank-breakdown .row.total {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 8px;
+}
+.rank-breakdown .row.total .label { font-weight: 800; color: var(--text); }
+.rank-breakdown .row.total .val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--primary);
+}
+.rank-breakdown .row.unit .val {
+  font-size: 12px;
+  color: var(--primary);
+}
+.shipping.free { color: var(--primary); font-weight: 700; }
+.shipping.unknown { color: var(--text-hint); font-weight: 600; font-size: 13px; }
+.shipping { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+.rank-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
 /* ── Scan locked ──────────────────────────────────────────── */
 .scan-box {
   width: 100%;
