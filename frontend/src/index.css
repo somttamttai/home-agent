@@ -1668,23 +1668,28 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   flex-direction: column;
   background: var(--bg);
 }
-.ob-progress {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 20px 0 12px;
+.ob-progress-bar {
+  position: relative;
+  height: 6px;
+  background: var(--border);
+  margin: 16px 20px 8px;
+  border-radius: 3px;
+  overflow: hidden;
 }
-.ob-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: var(--border-strong);
-  transition: all 0.3s;
-}
-.ob-dot.done { background: var(--primary); }
-.ob-dot.active {
+.ob-progress-fill {
+  height: 100%;
   background: var(--primary);
-  width: 28px;
-  border-radius: 5px;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.ob-progress-text {
+  position: absolute;
+  right: 0;
+  top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-hint);
+  font-variant-numeric: tabular-nums;
 }
 .ob-body {
   flex: 1;
@@ -1843,6 +1848,7 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 }
 .ob-sense-btn .icon { font-size: 16px; }
 .ob-sense-btn .text { font-size: 11px; font-weight: 700; color: var(--text-sub); }
+.ob-sense-btn .days { font-size: 10px; font-weight: 600; color: var(--text-hint); }
 .ob-sense-btn.active.critical { border-color: var(--danger); background: var(--danger-bg); }
 .ob-sense-btn.active.low { border-color: var(--warning); background: #FFF8E8; }
 [data-theme="dark"] .ob-sense-btn.active.low { background: #2E2A1C; }

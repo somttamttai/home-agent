@@ -5,14 +5,12 @@ import { effectivePeople } from '../utils/family.js'
 import { ALL_CATEGORIES, ITEMS_BY_CATEGORY } from '../utils/onboardingData.js'
 import { SENSE_LEVELS, senseToStock } from '../utils/stockMode.js'
 
-const TOTAL_STEPS = 5
-
-function ProgressBar({ step }) {
+function ProgressBar({ current, total }) {
+  const pct = total > 0 ? Math.round((current / total) * 100) : 0
   return (
-    <div className="ob-progress">
-      {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-        <div key={i} className={`ob-dot ${i < step ? 'done' : ''} ${i === step ? 'active' : ''}`} />
-      ))}
+    <div className="ob-progress-bar">
+      <div className="ob-progress-fill" style={{ width: `${pct}%` }} />
+      <div className="ob-progress-text">{current} / {total}</div>
     </div>
   )
 }
@@ -33,7 +31,7 @@ function Counter({ label, hint, value, onChange, min = 0 }) {
   )
 }
 
-// ── Step 1: 가족 구성원 ───────────────────────────────────────
+// ── 가족 구성원 ──────────────────────────────────────────────
 function StepFamily({ family, setFamily }) {
   return (
     <div className="ob-step">
@@ -61,7 +59,7 @@ function StepFamily({ family, setFamily }) {
   )
 }
 
-// ── Step 2: 카테고리 선택 ─────────────────────────────────────
+// ── 카테고리 선택 ────────────────────────────────────────────
 function StepCategories({ selected, setSelected, hasInfant }) {
   const cats = useMemo(
     () => ALL_CATEGORIES.filter((c) => !c.infant || hasInfant),
@@ -101,9 +99,12 @@ function StepCategories({ selected, setSelected, hasInfant }) {
   )
 }
 
-// ── Step 3: 소모품 선택 ───────────────────────────────────────
-function StepItems({ categories, selectedItems, setSelectedItems }) {
-  const toggleItem = (cat, name) => {
+// ── 카테고리별 소모품 선택 ───────────────────────────────────
+function StepCatItems({ cat, selectedItems, setSelectedItems }) {
+  const catInfo = ALL_CATEGORIES.find((c) => c.key === cat)
+  const items = ITEMS_BY_CATEGORY[cat] || []
+
+  const toggleItem = (name) => {
     setSelectedItems((s) => {
       const key = `${cat}::${name}`
       const next = { ...s }
@@ -113,9 +114,8 @@ function StepItems({ categories, selectedItems, setSelectedItems }) {
     })
   }
 
-  const toggleAll = (cat) => {
-    const items = ITEMS_BY_CATEGORY[cat] || []
-    const allSelected = items.every((it) => selectedItems[`${cat}::${it.name}`])
+  const allSelected = items.every((it) => selectedItems[`${cat}::${it.name}`])
+  const toggleAll = () => {
     setSelectedItems((s) => {
       const next = { ...s }
       for (const it of items) {
@@ -129,64 +129,54 @@ function StepItems({ categories, selectedItems, setSelectedItems }) {
 
   return (
     <div className="ob-step">
-      <div className="ob-title">어떤 소모품을 관리할까요?</div>
+      <div className="ob-title">{catInfo?.icon} {cat} 소모품을 선택해주세요</div>
       <div className="ob-subtitle">탭해서 선택하세요</div>
-      {categories.map((cat) => {
-        const items = ITEMS_BY_CATEGORY[cat] || []
-        if (items.length === 0) return null
-        const catInfo = ALL_CATEGORIES.find((c) => c.key === cat)
-        const allSelected = items.every((it) => selectedItems[`${cat}::${it.name}`])
-        return (
-          <div key={cat} className="ob-item-section">
-            <div className="ob-section-header">
-              <span>{catInfo?.icon} {cat}</span>
+      <div className="ob-item-section">
+        <div className="ob-section-header">
+          <span>{catInfo?.icon} {cat}</span>
+          <button type="button" className="ob-select-all" onClick={toggleAll}>
+            {allSelected ? '전체해제' : '전체선택'}
+          </button>
+        </div>
+        <div className="ob-chips">
+          {items.map((it) => {
+            const key = `${cat}::${it.name}`
+            const on = !!selectedItems[key]
+            return (
               <button
+                key={key}
                 type="button"
-                className="ob-select-all"
-                onClick={() => toggleAll(cat)}
+                className={`ob-chip ${on ? 'selected' : ''}`}
+                onClick={() => toggleItem(it.name)}
               >
-                {allSelected ? '전체해제' : '전체선택'}
+                {it.name}
               </button>
-            </div>
-            <div className="ob-chips">
-              {items.map((it) => {
-                const key = `${cat}::${it.name}`
-                const on = !!selectedItems[key]
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    className={`ob-chip ${on ? 'selected' : ''}`}
-                    onClick={() => toggleItem(cat, it.name)}
-                  >
-                    {it.name}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )
-      })}
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
 
-// ── Step 4: 초기 재고 상태 ────────────────────────────────────
-function StepStock({ selectedItems, stockLevels, setStockLevels }) {
+// ── 카테고리별 재고 상태 ─────────────────────────────────────
+function StepCatStock({ cat, selectedItems, stockLevels, setStockLevels }) {
+  const catInfo = ALL_CATEGORIES.find((c) => c.key === cat)
+  const items = ITEMS_BY_CATEGORY[cat] || []
+
   const entries = useMemo(
-    () => Object.keys(selectedItems).map((key) => {
-      const [cat, name] = key.split('::')
-      const items = ITEMS_BY_CATEGORY[cat] || []
-      const item = items.find((it) => it.name === name)
-      return { key, cat, name, item }
-    }).filter((e) => e.item),
-    [selectedItems],
+    () => items
+      .filter((it) => selectedItems[`${cat}::${it.name}`])
+      .map((it) => ({ key: `${cat}::${it.name}`, name: it.name })),
+    [cat, items, selectedItems],
   )
+
+  if (entries.length === 0) return null
 
   return (
     <div className="ob-step">
-      <div className="ob-title">지금 집에 얼마나 있어요?</div>
-      <div className="ob-subtitle">대략적으로 탭해주세요 (기본: 충분)</div>
+      <div className="ob-title">{catInfo?.icon} {cat} 재고가 얼마나 있어요?</div>
+      <div className="ob-subtitle">대략적으로 탭해주세요</div>
       <div className="ob-stock-list">
         {entries.map(({ key, name }) => {
           const current = stockLevels[key] || 'good'
@@ -203,6 +193,7 @@ function StepStock({ selectedItems, stockLevels, setStockLevels }) {
                   >
                     <span className="icon">{l.icon}</span>
                     <span className="text">{l.label}</span>
+                    <span className="days">{l.days}일</span>
                   </button>
                 ))}
               </div>
@@ -214,7 +205,7 @@ function StepStock({ selectedItems, stockLevels, setStockLevels }) {
   )
 }
 
-// ── Step 5: 완료 ──────────────────────────────────────────────
+// ── 완료 ─────────────────────────────────────────────────────
 function StepDone({ count, saving }) {
   return (
     <div className="ob-step ob-done">
@@ -226,7 +217,7 @@ function StepDone({ count, saving }) {
   )
 }
 
-// ── 메인 ──────────────────────────────────────────────────────
+// ── 메인 ─────────────────────────────────────────────────────
 export default function Onboarding() {
   const { authHeaders, refreshHousehold } = useAuth()
   const toast = useToast()
@@ -240,32 +231,58 @@ export default function Onboarding() {
   )
   const [selectedItems, setSelectedItems] = useState({})
   const [stockLevels, setStockLevels] = useState({})
+  const [catItemsInit, setCatItemsInit] = useState({})
 
-  // step 2→3 넘어갈 때 기본 선택 세팅
+  // 스텝 구조: 0=가족, 1=카테고리, [cat-items, cat-stock] x N, done
+  // step 2 ~ (2 + cats*2 - 1) = 카테고리별 소모품+재고
+  // step (2 + cats*2) = 완료
+
+  const totalSteps = 2 + categories.length * 2 + 1
+  const doneStep = 2 + categories.length * 2
+
+  // 카테고리별 진입 시 기본 전체선택
   useEffect(() => {
-    if (step === 2 && Object.keys(selectedItems).length === 0) {
-      const init = {}
-      for (const cat of categories) {
-        const items = ITEMS_BY_CATEGORY[cat] || []
-        for (const it of items) {
-          init[`${cat}::${it.name}`] = true
-        }
-      }
-      setSelectedItems(init)
-    }
-  }, [step, categories, selectedItems])
+    if (step < 2 || step >= doneStep) return
+    const catIdx = Math.floor((step - 2) / 2)
+    const isItemStep = (step - 2) % 2 === 0
+    if (!isItemStep) return
+    const cat = categories[catIdx]
+    if (!cat || catItemsInit[cat]) return
 
-  const itemCount = Object.keys(selectedItems).length
+    const items = ITEMS_BY_CATEGORY[cat] || []
+    setSelectedItems((s) => {
+      const next = { ...s }
+      for (const it of items) {
+        const key = `${cat}::${it.name}`
+        if (next[key] === undefined) next[key] = true
+      }
+      return next
+    })
+    setCatItemsInit((s) => ({ ...s, [cat]: true }))
+  }, [step, categories, doneStep, catItemsInit])
+
+  const itemCount = useMemo(
+    () => Object.keys(selectedItems).filter((k) => selectedItems[k]).length,
+    [selectedItems],
+  )
 
   const canNext = useMemo(() => {
     if (step === 0) return family.adults >= 1
     if (step === 1) return categories.length > 0
-    if (step === 2) return itemCount > 0
+    if (step >= 2 && step < doneStep) {
+      const catIdx = Math.floor((step - 2) / 2)
+      const isItemStep = (step - 2) % 2 === 0
+      if (isItemStep) {
+        const cat = categories[catIdx]
+        const items = ITEMS_BY_CATEGORY[cat] || []
+        return items.some((it) => selectedItems[`${cat}::${it.name}`])
+      }
+    }
     return true
-  }, [step, family, categories, itemCount])
+  }, [step, family, categories, doneStep, selectedItems])
 
   const onNext = () => {
-    if (step < TOTAL_STEPS - 1) setStep((s) => s + 1)
+    if (step < doneStep) setStep((s) => s + 1)
   }
   const onBack = () => {
     if (step > 0) setStep((s) => s - 1)
@@ -275,16 +292,14 @@ export default function Onboarding() {
     if (saving) return
     setSaving(true)
     try {
-      // 1) 가족설정 저장
       await fetch('/api/family', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(family),
       })
 
-      // 2) 소모품 일괄 등록
       const people = effectivePeople({ adults: family.adults, children: family.children })
-      const entries = Object.keys(selectedItems)
+      const entries = Object.keys(selectedItems).filter((k) => selectedItems[k])
       let ok = 0
       for (const key of entries) {
         const [cat, name] = key.split('::')
@@ -297,7 +312,6 @@ export default function Onboarding() {
           : 0.03
         const sense = stockLevels[key] || 'good'
         const currentStock = senseToStock(sense, dailyUsage)
-        const reorderPoint = 7
 
         await fetch('/api/consumables', {
           method: 'POST',
@@ -309,13 +323,12 @@ export default function Onboarding() {
             category: cat,
             current_stock: currentStock,
             daily_usage: dailyUsage,
-            reorder_point: reorderPoint,
+            reorder_point: 7,
           }),
         })
         ok++
       }
 
-      // 3) onboarded 표시
       await fetch('/api/auth/onboarded', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -331,48 +344,67 @@ export default function Onboarding() {
     }
   }, [saving, authHeaders, family, selectedItems, stockLevels, toast, refreshHousehold])
 
-  // step 4(완료)에서 자동 저장
   useEffect(() => {
-    if (step === 4 && !done && !saving) onFinish()
-  }, [step, done, saving, onFinish])
+    if (step === doneStep && !done && !saving) onFinish()
+  }, [step, doneStep, done, saving, onFinish])
 
-  return (
-    <div className="ob-page">
-      <ProgressBar step={step} />
-
-      <div className="ob-body">
-        {step === 0 && <StepFamily family={family} setFamily={setFamily} />}
-        {step === 1 && (
-          <StepCategories
-            selected={categories}
-            setSelected={setCategories}
-            hasInfant={family.infants > 0}
-          />
-        )}
-        {step === 2 && (
-          <StepItems
-            categories={categories}
+  // 현재 스텝 렌더링
+  const renderStep = () => {
+    if (step === 0) return <StepFamily family={family} setFamily={setFamily} />
+    if (step === 1) {
+      return (
+        <StepCategories
+          selected={categories}
+          setSelected={setCategories}
+          hasInfant={family.infants > 0}
+        />
+      )
+    }
+    if (step >= 2 && step < doneStep) {
+      const catIdx = Math.floor((step - 2) / 2)
+      const isItemStep = (step - 2) % 2 === 0
+      const cat = categories[catIdx]
+      if (isItemStep) {
+        return (
+          <StepCatItems
+            key={`items-${cat}`}
+            cat={cat}
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
           />
-        )}
-        {step === 3 && (
-          <StepStock
-            selectedItems={selectedItems}
-            stockLevels={stockLevels}
-            setStockLevels={setStockLevels}
-          />
-        )}
-        {step === 4 && <StepDone count={itemCount} saving={saving} />}
+        )
+      }
+      return (
+        <StepCatStock
+          key={`stock-${cat}`}
+          cat={cat}
+          selectedItems={selectedItems}
+          stockLevels={stockLevels}
+          setStockLevels={setStockLevels}
+        />
+      )
+    }
+    return <StepDone count={itemCount} saving={saving} />
+  }
+
+  const isLastCatStock = step === doneStep - 1
+  const isDone = step === doneStep
+
+  return (
+    <div className="ob-page">
+      <ProgressBar current={step} total={totalSteps - 1} />
+
+      <div className="ob-body">
+        {renderStep()}
       </div>
 
       <div className="ob-footer">
-        {step > 0 && step < 4 && (
+        {step > 0 && !isDone && (
           <button type="button" className="btn secondary" onClick={onBack}>
             이전
           </button>
         )}
-        {step < 3 && (
+        {!isDone && !isLastCatStock && (
           <button
             type="button"
             className="btn"
@@ -383,7 +415,7 @@ export default function Onboarding() {
             다음
           </button>
         )}
-        {step === 3 && (
+        {isLastCatStock && (
           <button
             type="button"
             className="btn"
@@ -393,7 +425,7 @@ export default function Onboarding() {
             완료
           </button>
         )}
-        {step === 4 && done && (
+        {isDone && done && (
           <button
             type="button"
             className="btn block lg"
