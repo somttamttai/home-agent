@@ -1,16 +1,116 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useToast } from '../components/Toast.jsx'
 import { effectivePeople } from '../utils/family.js'
 import { ALL_CATEGORIES, ITEMS_BY_CATEGORY } from '../utils/onboardingData.js'
 import { SENSE_LEVELS, senseToStock } from '../utils/stockMode.js'
 
-function ProgressBar({ current, total }) {
-  const pct = total > 0 ? Math.round((current / total) * 100) : 0
+const TIPS = [
+  '재고가 부족하면 자동으로 알려드려요',
+  '가격비교로 최저가를 찾아드려요',
+  '가족이 수정하면 실시간으로 반영돼요',
+  '재고 상태는 언제든 탭으로 수정 가능해요',
+  '구매하면 재고가 자동으로 업데이트돼요',
+  '선호 브랜드를 설정하면 맞춤 비교해드려요',
+  '소비 속도는 가족 수에 맞게 자동 계산돼요',
+  '초대코드로 가족과 함께 관리할 수 있어요',
+]
+
+// ── 상단 브레드크럼 + 진행바 ─────────────────────────────────
+function StepNav({ step, doneStep, categories }) {
+  const pct = doneStep > 0 ? Math.min(100, Math.round((step / doneStep) * 100)) : 0
+
+  const crumbs = useMemo(() => {
+    const list = [
+      { label: '가족', stepIdx: 0 },
+      { label: '카테고리', stepIdx: 1 },
+    ]
+    categories.forEach((cat, i) => {
+      const info = ALL_CATEGORIES.find((c) => c.key === cat)
+      list.push({ label: `${info?.icon || ''} ${cat}`, stepIdx: 2 + i * 2 })
+    })
+    list.push({ label: '완료', stepIdx: doneStep })
+    return list
+  }, [categories, doneStep])
+
+  const scrollRef = useRef(null)
+  const activeRef = useRef(null)
+
+  useEffect(() => {
+    if (activeRef.current && scrollRef.current) {
+      activeRef.current.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    }
+  }, [step])
+
+  const currentCrumbIdx = useMemo(() => {
+    for (let i = crumbs.length - 1; i >= 0; i--) {
+      if (step >= crumbs[i].stepIdx) return i
+    }
+    return 0
+  }, [step, crumbs])
+
   return (
-    <div className="ob-progress-bar">
-      <div className="ob-progress-fill" style={{ width: `${pct}%` }} />
-      <div className="ob-progress-text">{current} / {total}</div>
+    <div className="ob-nav">
+      <div className="ob-crumbs" ref={scrollRef}>
+        {crumbs.map((c, i) => {
+          const isDone = i < currentCrumbIdx
+          const isActive = i === currentCrumbIdx
+          return (
+            <span key={i} className="ob-crumb-wrap">
+              {i > 0 && <span className="ob-crumb-sep">›</span>}
+              <span
+                ref={isActive ? activeRef : null}
+                className={`ob-crumb ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`}
+              >
+                {isDone && <span className="check">✓</span>}
+                {c.label}
+              </span>
+            </span>
+          )
+        })}
+      </div>
+      <div className="ob-progress-bar">
+        <div className="ob-progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+// ── 로딩 화면 ────────────────────────────────────────────────
+function LoadingScreen({ total, current, currentName }) {
+  const [tipIdx, setTipIdx] = useState(0)
+  const [tipVisible, setTipVisible] = useState(true)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipVisible(false)
+      setTimeout(() => {
+        setTipIdx((i) => (i + 1) % TIPS.length)
+        setTipVisible(true)
+      }, 300)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const pct = total > 0 ? Math.round((current / total) * 100) : 0
+
+  return (
+    <div className="ob-loading">
+      <div className="ob-loading-top">소모품을 등록하고 있어요...</div>
+      <div className="ob-loading-center">
+        <div className="ob-loading-gauge">
+          <div className="ob-loading-gauge-fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="ob-loading-count">{current} / {total}개 등록 중</div>
+        {currentName && (
+          <div className="ob-loading-name">{currentName}</div>
+        )}
+      </div>
+      <div className="ob-loading-bottom">
+        <div className={`ob-loading-tip ${tipVisible ? 'visible' : ''}`}>
+          💡 {TIPS[tipIdx]}
+        </div>
+      </div>
     </div>
   )
 }
@@ -36,22 +136,12 @@ function StepFamily({ family, setFamily }) {
   return (
     <div className="ob-step">
       <div className="ob-title">몇 명이 함께 사세요?</div>
-      <Counter
-        label="성인" hint="13세 이상"
-        value={family.adults}
-        onChange={(n) => setFamily((f) => ({ ...f, adults: n }))}
-        min={1}
-      />
-      <Counter
-        label="어린이" hint="4~12세"
-        value={family.children}
-        onChange={(n) => setFamily((f) => ({ ...f, children: n }))}
-      />
-      <Counter
-        label="유아" hint="0~3세"
-        value={family.infants}
-        onChange={(n) => setFamily((f) => ({ ...f, infants: n }))}
-      />
+      <Counter label="성인" hint="13세 이상" value={family.adults}
+        onChange={(n) => setFamily((f) => ({ ...f, adults: n }))} min={1} />
+      <Counter label="어린이" hint="4~12세" value={family.children}
+        onChange={(n) => setFamily((f) => ({ ...f, children: n }))} />
+      <Counter label="유아" hint="0~3세" value={family.infants}
+        onChange={(n) => setFamily((f) => ({ ...f, infants: n }))} />
       {family.infants > 0 && (
         <div className="ob-hint-card">유아용품 카테고리가 추가돼요</div>
       )}
@@ -81,12 +171,9 @@ function StepCategories({ selected, setSelected, hasInfant }) {
       <div className="ob-title">어떤 공간의 소모품을 관리할까요?</div>
       <div className="ob-cat-grid">
         {cats.map((c) => (
-          <button
-            key={c.key}
-            type="button"
+          <button key={c.key} type="button"
             className={`ob-cat-card ${selected.includes(c.key) ? 'selected' : ''}`}
-            onClick={() => toggle(c.key)}
-          >
+            onClick={() => toggle(c.key)}>
             <span className="icon">{c.icon}</span>
             <span className="label">{c.key}</span>
           </button>
@@ -141,14 +228,10 @@ function StepCatItems({ cat, selectedItems, setSelectedItems }) {
         <div className="ob-chips">
           {items.map((it) => {
             const key = `${cat}::${it.name}`
-            const on = !!selectedItems[key]
             return (
-              <button
-                key={key}
-                type="button"
-                className={`ob-chip ${on ? 'selected' : ''}`}
-                onClick={() => toggleItem(it.name)}
-              >
+              <button key={key} type="button"
+                className={`ob-chip ${selectedItems[key] ? 'selected' : ''}`}
+                onClick={() => toggleItem(it.name)}>
                 {it.name}
               </button>
             )
@@ -185,12 +268,9 @@ function StepCatStock({ cat, selectedItems, stockLevels, setStockLevels }) {
               <div className="ob-stock-name">{name}</div>
               <div className="ob-sense-btns">
                 {SENSE_LEVELS.map((l) => (
-                  <button
-                    key={l.key}
-                    type="button"
+                  <button key={l.key} type="button"
                     className={`ob-sense-btn ${current === l.key ? 'active' : ''} ${l.key}`}
-                    onClick={() => setStockLevels((s) => ({ ...s, [key]: l.key }))}
-                  >
+                    onClick={() => setStockLevels((s) => ({ ...s, [key]: l.key }))}>
                     <span className="icon">{l.icon}</span>
                     <span className="text">{l.label}</span>
                     <span className="days">{l.days}일</span>
@@ -206,13 +286,12 @@ function StepCatStock({ cat, selectedItems, stockLevels, setStockLevels }) {
 }
 
 // ── 완료 ─────────────────────────────────────────────────────
-function StepDone({ count, saving }) {
+function StepDone({ count }) {
   return (
     <div className="ob-step ob-done">
       <div className="ob-done-icon">✅</div>
       <div className="ob-done-title">{count}개 소모품이 등록됐어요!</div>
       <div className="ob-done-sub">재고는 언제든 탭으로 수정할 수 있어요</div>
-      {saving && <div className="ob-done-sub">저장 중...</div>}
     </div>
   )
 }
@@ -224,6 +303,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
+  const [saveProgress, setSaveProgress] = useState({ total: 0, current: 0, name: '' })
 
   const [family, setFamily] = useState({ adults: 2, children: 0, infants: 0 })
   const [categories, setCategories] = useState(
@@ -233,14 +313,9 @@ export default function Onboarding() {
   const [stockLevels, setStockLevels] = useState({})
   const [catItemsInit, setCatItemsInit] = useState({})
 
-  // 스텝 구조: 0=가족, 1=카테고리, [cat-items, cat-stock] x N, done
-  // step 2 ~ (2 + cats*2 - 1) = 카테고리별 소모품+재고
-  // step (2 + cats*2) = 완료
-
   const totalSteps = 2 + categories.length * 2 + 1
   const doneStep = 2 + categories.length * 2
 
-  // 카테고리별 진입 시 기본 전체선택
   useEffect(() => {
     if (step < 2 || step >= doneStep) return
     const catIdx = Math.floor((step - 2) / 2)
@@ -281,12 +356,8 @@ export default function Onboarding() {
     return true
   }, [step, family, categories, doneStep, selectedItems])
 
-  const onNext = () => {
-    if (step < doneStep) setStep((s) => s + 1)
-  }
-  const onBack = () => {
-    if (step > 0) setStep((s) => s - 1)
-  }
+  const onNext = () => { if (step < doneStep) setStep((s) => s + 1) }
+  const onBack = () => { if (step > 0) setStep((s) => s - 1) }
 
   const onFinish = useCallback(async () => {
     if (saving) return
@@ -300,12 +371,16 @@ export default function Onboarding() {
 
       const people = effectivePeople({ adults: family.adults, children: family.children })
       const entries = Object.keys(selectedItems).filter((k) => selectedItems[k])
+      setSaveProgress({ total: entries.length, current: 0, name: '' })
+
       let ok = 0
       for (const key of entries) {
         const [cat, name] = key.split('::')
         const items = ITEMS_BY_CATEGORY[cat] || []
         const tmpl = items.find((it) => it.name === name)
         if (!tmpl) continue
+
+        setSaveProgress({ total: entries.length, current: ok, name: tmpl.name })
 
         const dailyUsage = people > 0 && tmpl.baselineDays > 0
           ? Math.round((people / tmpl.baselineDays) * 10000) / 10000
@@ -329,17 +404,17 @@ export default function Onboarding() {
         ok++
       }
 
+      setSaveProgress({ total: entries.length, current: ok, name: '' })
+
       await fetch('/api/auth/onboarded', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
       })
 
       setDone(true)
-      toast(`${ok}개 소모품이 등록됐어요!`)
       await refreshHousehold()
     } catch (e) {
       toast(`❌ 저장 실패: ${e.message}`)
-    } finally {
       setSaving(false)
     }
   }, [saving, authHeaders, family, selectedItems, stockLevels, toast, refreshHousehold])
@@ -348,16 +423,25 @@ export default function Onboarding() {
     if (step === doneStep && !done && !saving) onFinish()
   }, [step, doneStep, done, saving, onFinish])
 
-  // 현재 스텝 렌더링
+  // 로딩 중이면 로딩 화면
+  if (saving && !done) {
+    return (
+      <div className="ob-page">
+        <LoadingScreen
+          total={saveProgress.total}
+          current={saveProgress.current}
+          currentName={saveProgress.name}
+        />
+      </div>
+    )
+  }
+
   const renderStep = () => {
     if (step === 0) return <StepFamily family={family} setFamily={setFamily} />
     if (step === 1) {
       return (
-        <StepCategories
-          selected={categories}
-          setSelected={setCategories}
-          hasInfant={family.infants > 0}
-        />
+        <StepCategories selected={categories} setSelected={setCategories}
+          hasInfant={family.infants > 0} />
       )
     }
     if (step >= 2 && step < doneStep) {
@@ -365,26 +449,13 @@ export default function Onboarding() {
       const isItemStep = (step - 2) % 2 === 0
       const cat = categories[catIdx]
       if (isItemStep) {
-        return (
-          <StepCatItems
-            key={`items-${cat}`}
-            cat={cat}
-            selectedItems={selectedItems}
-            setSelectedItems={setSelectedItems}
-          />
-        )
+        return <StepCatItems key={`items-${cat}`} cat={cat}
+          selectedItems={selectedItems} setSelectedItems={setSelectedItems} />
       }
-      return (
-        <StepCatStock
-          key={`stock-${cat}`}
-          cat={cat}
-          selectedItems={selectedItems}
-          stockLevels={stockLevels}
-          setStockLevels={setStockLevels}
-        />
-      )
+      return <StepCatStock key={`stock-${cat}`} cat={cat}
+        selectedItems={selectedItems} stockLevels={stockLevels} setStockLevels={setStockLevels} />
     }
-    return <StepDone count={itemCount} saving={saving} />
+    return <StepDone count={itemCount} />
   }
 
   const isLastCatStock = step === doneStep - 1
@@ -392,7 +463,7 @@ export default function Onboarding() {
 
   return (
     <div className="ob-page">
-      <ProgressBar current={step} total={totalSteps - 1} />
+      <StepNav step={step} doneStep={doneStep} categories={categories} />
 
       <div className="ob-body">
         {renderStep()}
@@ -400,37 +471,23 @@ export default function Onboarding() {
 
       <div className="ob-footer">
         {step > 0 && !isDone && (
-          <button type="button" className="btn secondary" onClick={onBack}>
-            이전
-          </button>
+          <button type="button" className="btn secondary" onClick={onBack}>이전</button>
         )}
         {!isDone && !isLastCatStock && (
-          <button
-            type="button"
-            className="btn"
-            onClick={onNext}
-            disabled={!canNext}
-            style={{ marginLeft: 'auto' }}
-          >
+          <button type="button" className="btn" onClick={onNext}
+            disabled={!canNext} style={{ marginLeft: 'auto' }}>
             다음
           </button>
         )}
         {isLastCatStock && (
-          <button
-            type="button"
-            className="btn"
-            onClick={onNext}
-            style={{ marginLeft: 'auto' }}
-          >
+          <button type="button" className="btn" onClick={onNext}
+            style={{ marginLeft: 'auto' }}>
             완료
           </button>
         )}
         {isDone && done && (
-          <button
-            type="button"
-            className="btn block lg"
-            onClick={() => window.location.reload()}
-          >
+          <button type="button" className="btn block lg"
+            onClick={() => window.location.reload()}>
             시작하기
           </button>
         )}

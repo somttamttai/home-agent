@@ -1668,28 +1668,46 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   flex-direction: column;
   background: var(--bg);
 }
+/* breadcrumb nav */
+.ob-nav { padding: 12px 20px 0; }
+.ob-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 10px;
+}
+.ob-crumbs::-webkit-scrollbar { display: none; }
+.ob-crumb-wrap { display: flex; align-items: center; flex-shrink: 0; }
+.ob-crumb-sep {
+  margin: 0 6px;
+  color: var(--text-hint);
+  font-size: 12px;
+}
+.ob-crumb {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-hint);
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.ob-crumb.done { color: var(--primary); }
+.ob-crumb.done .check { margin-right: 3px; }
+.ob-crumb.active { color: var(--text); font-weight: 800; }
+
 .ob-progress-bar {
-  position: relative;
-  height: 6px;
+  height: 4px;
   background: var(--border);
-  margin: 16px 20px 8px;
-  border-radius: 3px;
+  border-radius: 2px;
   overflow: hidden;
 }
 .ob-progress-fill {
   height: 100%;
   background: var(--primary);
-  border-radius: 3px;
+  border-radius: 2px;
   transition: width 0.3s ease;
-}
-.ob-progress-text {
-  position: absolute;
-  right: 0;
-  top: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-hint);
-  font-variant-numeric: tabular-nums;
 }
 .ob-body {
   flex: 1;
@@ -1878,6 +1896,68 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   color: var(--text-sub);
   margin-top: 8px;
 }
+
+/* Loading screen */
+.ob-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 30px;
+  text-align: center;
+}
+.ob-loading-top {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 40px;
+  letter-spacing: -0.02em;
+}
+.ob-loading-center {
+  width: 100%;
+  max-width: 320px;
+}
+.ob-loading-gauge {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ob-loading-gauge-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 4px;
+  transition: width 0.25s ease;
+}
+.ob-loading-count {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ob-loading-name {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-top: 4px;
+  font-weight: 600;
+}
+.ob-loading-bottom {
+  margin-top: 48px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ob-loading-tip {
+  font-size: 14px;
+  color: var(--text-sub);
+  font-weight: 600;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+.ob-loading-tip.visible { opacity: 1; }
 
 /* ── Sense Controls (StockCard) ──────────────────────────── */
 .sense-controls {
