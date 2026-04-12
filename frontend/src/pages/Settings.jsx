@@ -1,13 +1,9 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
-import {
-  DEFAULT_FAMILY,
-  effectivePeople,
-  formatPeople,
-  loadFamily,
-  saveFamily,
-} from '../utils/family.js'
+import { useAuth } from '../hooks/useAuth.jsx'
+import { effectivePeople, formatPeople } from '../utils/family.js'
 import { expectedDays } from '../utils/consumption.js'
 
 function Counter({ label, hint, value, onChange, min = 0, max = 99 }) {
@@ -40,30 +36,89 @@ function Counter({ label, hint, value, onChange, min = 0, max = 99 }) {
 
 export default function Settings() {
   const toast = useToast()
-  const [form, setForm] = useState(loadFamily)
+  const nav = useNavigate()
+  const { authHeaders, household, user, signOut } = useAuth()
+  const [form, setForm] = useState({ adults: 2, children: 0, infants: 0 })
+  const [initial, setInitial] = useState({ adults: 2, children: 0, infants: 0 })
+  const [loaded, setLoaded] = useState(false)
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const r = await fetch('/api/family', { headers: authHeaders() })
+      if (!r.ok) return
+      const data = await r.json()
+      const f = {
+        adults: data.adults ?? 2,
+        children: data.children ?? 0,
+        infants: data.infants ?? 0,
+      }
+      setForm(f)
+      setInitial(f)
+    } catch {}
+    setLoaded(true)
+  }, [authHeaders])
+
+  useEffect(() => { loadSettings() }, [loadSettings])
 
   const setAdults = (n) => setForm((f) => ({ ...f, adults: n }))
   const setChildren = (n) => setForm((f) => ({ ...f, children: n }))
+  const setInfants = (n) => setForm((f) => ({ ...f, infants: n }))
 
-  const onSave = () => {
-    saveFamily(form)
-    toast('설정이 저장됐어요 ✅')
+  const onSave = async () => {
+    try {
+      const r = await fetch('/api/family', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(form),
+      })
+      if (!r.ok) throw new Error()
+      setInitial({ ...form })
+      toast('설정이 저장됐어요 ✅')
+    } catch {
+      toast('❌ 저장에 실패했어요')
+    }
   }
 
-  const onResetFamily = () => setForm(DEFAULT_FAMILY)
+  const onReset = () => setForm({ ...initial })
 
-  const people = effectivePeople(form)
-  const initialFamily = loadFamily()
-  const isFamilyDirty =
-    form.adults !== initialFamily.adults || form.children !== initialFamily.children
+  const family = { adults: form.adults, children: form.children }
+  const people = effectivePeople(family)
+  const isDirty =
+    form.adults !== initial.adults ||
+    form.children !== initial.children ||
+    form.infants !== initial.infants
 
   return (
     <div>
       <PageHeader title="설정" />
       <div className="page">
+        {/* 집 정보 */}
         <div className="section-title" style={{ paddingTop: 0 }}>
-          가족 구성원
+          우리집
         </div>
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>
+                🏠 {household?.name || '우리집'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-sub)', marginTop: 4 }}>
+                {user?.email}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="btn tonal"
+              style={{ fontSize: 12 }}
+              onClick={() => nav('/invite')}
+            >
+              초대코드
+            </button>
+          </div>
+        </div>
+
+        {/* 가족 구성원 */}
+        <div className="section-title">가족 구성원</div>
 
         <Counter
           label="성인"
@@ -77,13 +132,19 @@ export default function Settings() {
           value={form.children}
           onChange={setChildren}
         />
+        <Counter
+          label="영유아"
+          hint="3세 이하"
+          value={form.infants}
+          onChange={setInfants}
+        />
 
         <div
           className="card"
           style={{ borderColor: 'var(--primary)', borderWidth: 1.5 }}
         >
           <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>
-            👨‍👩‍👧 유효 인원
+            유효 인원
           </div>
           <div
             style={{
@@ -107,7 +168,7 @@ export default function Settings() {
               fontWeight: 500,
             }}
           >
-            성인 {form.adults}명 + 어린이 {form.children}명 × 0.7
+            성인 {form.adults}명 + 어린이 {form.children}명 x 0.7
           </div>
 
           {people > 0 && (
@@ -129,11 +190,11 @@ export default function Settings() {
                 예상 소비 일수
               </div>
               {[
-                ['🧻', '화장지 30롤', '화장지'],
-                ['🪥', '치약 120g', '치약'],
-                ['🧻', '키친타올 150매', '키친타올'],
-                ['🧴', '세탁세제 3kg', '세탁세제'],
-              ].map(([icon, label, key]) => (
+                ['화장지 30롤', '화장지'],
+                ['치약 120g', '치약'],
+                ['키친타올 150매', '키친타올'],
+                ['세탁세제 3kg', '세탁세제'],
+              ].map(([label, key]) => (
                 <div
                   key={key}
                   style={{
@@ -144,7 +205,7 @@ export default function Settings() {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <span>{icon} {label}</span>
+                  <span>{label}</span>
                   <span
                     style={{
                       fontWeight: 800,
@@ -152,7 +213,7 @@ export default function Settings() {
                       color: 'var(--primary)',
                     }}
                   >
-                    약 {expectedDays(key, form)}일
+                    약 {expectedDays(key, family)}일
                   </span>
                 </div>
               ))}
@@ -160,14 +221,14 @@ export default function Settings() {
           )}
         </div>
 
-        {isFamilyDirty && (
+        {isDirty && (
           <button
             type="button"
             className="btn secondary block"
             style={{ marginTop: 12 }}
-            onClick={onResetFamily}
+            onClick={onReset}
           >
-            ↺ 가족 인원 되돌리기
+            되돌리기
           </button>
         )}
 
@@ -176,16 +237,22 @@ export default function Settings() {
           <div style={{ fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.6 }}>
             가족 인원을 설정하면 소모품 추가 시 일일 소비량이 자동으로 계산돼요.
             템플릿을 선택하면 기준 소비속도에 우리 가족 인원을 곱한 값이 들어갑니다.
-            언제든 직접 수정할 수 있어요.
-            <br /><br />
-            🏷️ <b>선호 브랜드</b>는 각 소모품 카드의 ⋯ 메뉴에서 직접 설정할 수 있어요.
           </div>
         </div>
+
+        <button
+          type="button"
+          className="btn secondary block"
+          onClick={signOut}
+          style={{ marginTop: 24, color: 'var(--danger)' }}
+        >
+          로그아웃
+        </button>
       </div>
 
       <div className="bottom-action">
         <button type="button" className="btn block lg" onClick={onSave}>
-          💾 저장하기
+          저장하기
         </button>
       </div>
     </div>

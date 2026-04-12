@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
-import { buildSearchQuery, getPreferredBrand } from '../utils/brands.js'
+import { useAuth } from '../hooks/useAuth.jsx'
+import { buildSearchQuery } from '../utils/brands.js'
 
 const PLY_TABS = [
   { label: '전체', value: '' },
@@ -41,6 +42,8 @@ export default function PriceCompare() {
   const nav = useNavigate()
   const [sp, setSp] = useSearchParams()
   const toast = useToast()
+  const { authHeaders } = useAuth()
+  const [brandsMap, setBrandsMap] = useState({})
 
   const [query, setQuery] = useState(sp.get('query') || '크리넥스 3겹 30m')
   const [ply, setPly] = useState(sp.get('ply') || '')
@@ -70,6 +73,13 @@ export default function PriceCompare() {
       setLoading(false)
     }
   }, [toast])
+
+  useEffect(() => {
+    fetch('/api/brands', { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((data) => setBrandsMap(data.brands || {}))
+      .catch(() => {})
+  }, [authHeaders])
 
   useEffect(() => {
     const urlQuery = sp.get('query')
@@ -106,8 +116,7 @@ export default function PriceCompare() {
     if (data) runSearch(query, value, brand)
   }
 
-  // Settings 에 등록된 선호 브랜드 (현재 query 에 대해)
-  const myBrand = useMemo(() => getPreferredBrand(query), [query])
+  const myBrand = useMemo(() => brandsMap[query?.trim()] || null, [query, brandsMap])
 
   const onShowAllBrands = () => {
     setBrand('')

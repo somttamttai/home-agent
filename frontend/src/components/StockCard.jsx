@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import BottomSheet from './BottomSheet.jsx'
 import Modal from './Modal.jsx'
 import { useToast } from './Toast.jsx'
-import { getPreferredBrand, loadBrands, saveBrands } from '../utils/brands.js'
 import { calcDailyUsage, getBaselineDays } from '../utils/consumption.js'
-import { effectivePeople, formatPeople, loadFamily } from '../utils/family.js'
+import { effectivePeople, formatPeople } from '../utils/family.js'
+import { useAuth } from '../hooks/useAuth.jsx'
 
 const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
 
@@ -231,16 +231,6 @@ function InfoModal({ open, item, onClose, onUpdate }) {
         category: form.category,
       })
 
-      // 이름이 바뀌면 brands 매핑도 따라 이전
-      if (oldName !== newName) {
-        const brands = loadBrands()
-        if (brands[oldName]) {
-          brands[newName] = brands[oldName]
-          delete brands[oldName]
-          saveBrands(brands)
-        }
-      }
-
       toast('✅ 상품 정보가 수정됐어요')
       onClose()
     } catch {
@@ -320,23 +310,43 @@ function initInfo(item) {
 // ───────────────────────────────────────────────────────────────────────
 function BrandModal({ open, item, onClose }) {
   const toast = useToast()
+  const { authHeaders } = useAuth()
   const [brand, setBrand] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (open) setBrand(getPreferredBrand(item.name) || '')
-  }, [open, item])
-
-  const handleSave = () => {
-    const map = loadBrands()
-    const v = brand.trim()
-    if (v) {
-      map[item.name] = v
-    } else {
-      delete map[item.name]
+    if (open) {
+      fetch('/api/brands', { headers: authHeaders() })
+        .then((r) => r.json())
+        .then((data) => setBrand((data.brands || {})[item.name] || ''))
+        .catch(() => setBrand(''))
     }
-    saveBrands(map)
-    toast(v ? `✅ "${v}" 브랜드로 저장됨` : '🗑 선호 브랜드 삭제됨')
-    onClose()
+  }, [open, item, authHeaders])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const r = await fetch('/api/brands', { headers: authHeaders() })
+      const data = await r.json()
+      const map = data.brands || {}
+      const v = brand.trim()
+      if (v) {
+        map[item.name] = v
+      } else {
+        delete map[item.name]
+      }
+      await fetch('/api/brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ brands: map }),
+      })
+      toast(v ? `✅ "${v}" 브랜드로 저장됨` : '🗑 선호 브랜드 삭제됨')
+      onClose()
+    } catch {
+      toast('❌ 저장 실패')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -346,11 +356,11 @@ function BrandModal({ open, item, onClose }) {
       title="선호 브랜드 설정"
       actions={
         <>
-          <button type="button" className="btn secondary" onClick={onClose}>
+          <button type="button" className="btn secondary" onClick={onClose} disabled={saving}>
             취소
           </button>
-          <button type="button" className="btn" onClick={handleSave}>
-            저장
+          <button type="button" className="btn" onClick={handleSave} disabled={saving}>
+            {saving ? '저장중…' : '저장'}
           </button>
         </>
       }
@@ -376,7 +386,17 @@ function BrandModal({ open, item, onClose }) {
 // ───────────────────────────────────────────────────────────────────────
 function ConsumptionModal({ open, item, onClose, onUpdate }) {
   const toast = useToast()
-  const family = useMemo(() => loadFamily(), [open])
+  const { authHeaders } = useAuth()
+  const [family, setFamily] = useState({ adults: 2, children: 0 })
+
+  useEffect(() => {
+    if (open) {
+      fetch('/api/family', { headers: authHeaders() })
+        .then((r) => r.json())
+        .then((data) => setFamily({ adults: data.adults ?? 2, children: data.children ?? 0 }))
+        .catch(() => {})
+    }
+  }, [open, authHeaders])
   const people = effectivePeople(family)
 
   const [form, setForm] = useState(() => initConsumption(item))

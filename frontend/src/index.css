@@ -1529,3 +1529,134 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Login Page ──────────────────────────────────────────── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 20px;
+}
+.login-content {
+  text-align: center;
+  width: 100%;
+  max-width: 340px;
+}
+.login-logo {
+  font-size: 64px;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+.login-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 8px;
+  letter-spacing: -0.03em;
+}
+.login-subtitle {
+  font-size: 15px;
+  color: var(--text-sub);
+  margin: 0 0 40px;
+  line-height: 1.5;
+}
+.login-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+  font-family: var(--font);
+}
+.login-btn:active { transform: scale(0.98); opacity: 0.92; }
+.login-btn.google {
+  background: #FFFFFF;
+  color: #3C4043;
+  border: 1px solid var(--border-strong);
+}
+[data-theme="dark"] .login-btn.google {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.login-btn.kakao {
+  background: #FEE500;
+  color: #3C1E1E;
+}
+
+/* ── Household Setup ─────────────────────────────────────── */
+.setup-tabs {
+  display: flex;
+  background: var(--border);
+  border-radius: 12px;
+  padding: 3px;
+  margin-bottom: 24px;
+}
+.setup-tab {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-sub);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font);
+}
+.setup-tab.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+.setup-form {
+  text-align: left;
+}
+.setup-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-sub);
+  margin-bottom: 8px;
+}
+.setup-input {
+  width: 100%;
+  padding: 16px 18px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--card);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: var(--font);
+}
+.setup-input:focus {
+  border-color: var(--primary);
+}
+
+/* ── Invite Code Display ─────────────────────────────────── */
+.invite-code-display {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  padding: 16px 0;
+}

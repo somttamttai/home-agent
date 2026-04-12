@@ -21,7 +21,7 @@ export class BadRequest extends Error {
 
 const CREATE_FIELDS = new Set([
   'name', 'brand', 'spec', 'category', 'max_stock',
-  'current_stock', 'daily_usage', 'reorder_point',
+  'current_stock', 'daily_usage', 'reorder_point', 'household_id',
 ]);
 const UPDATE_FIELDS = new Set([
   'name', 'brand', 'spec', 'category',
@@ -53,8 +53,10 @@ function annotateStock(c) {
 }
 
 // ── consumables ────────────────────────────────────────────────────────
-export async function listConsumables() {
-  const rows = await supabase.select('consumables', { order: 'id.asc' });
+export async function listConsumables(householdId = null) {
+  const params = { order: 'id.asc' };
+  if (householdId) params.household_id = `eq.${householdId}`;
+  const rows = await supabase.select('consumables', params);
   return rows.map(annotateStock);
 }
 
@@ -100,8 +102,10 @@ export async function deleteConsumable(cid) {
   return { ok: true };
 }
 
-export async function lowStockAlerts() {
-  const rows = await supabase.select('consumables');
+export async function lowStockAlerts(householdId = null) {
+  const params = {};
+  if (householdId) params.household_id = `eq.${householdId}`;
+  const rows = await supabase.select('consumables', params);
   return rows.map(annotateStock).filter((r) => r.need_reorder);
 }
 
@@ -170,18 +174,19 @@ export async function refreshPrice(cid) {
   const best = await naver.findCheapest(consumable.name, ply);
   if (!best) throw new NotFound('no matching product found');
 
-  const saved = await supabase.insert('price_history', {
+  const phRow = {
     consumable_id: cid,
     mall_name: best.mall,
     price: best.price,
-    // legacy column name; 이제는 단위 무관한 단위가격을 저장
     unit_price_per_meter: best.unit_price,
     spec_parsed: {
       ...best.specs,
       unit: best.unit,
       total_size: best.total_size,
     },
-  });
+  };
+  if (consumable.household_id) phRow.household_id = consumable.household_id;
+  const saved = await supabase.insert('price_history', phRow);
   return { saved, best };
 }
 

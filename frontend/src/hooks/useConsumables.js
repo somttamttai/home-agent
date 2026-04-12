@@ -1,20 +1,27 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast.jsx'
-import { getPreferredBrand } from '../utils/brands.js'
+import { useAuth } from './useAuth.jsx'
+import { useRealtime } from './useRealtime.js'
 
-// 소모품 목록 + 액션을 공유하는 훅. Home/CategoryDetail 양쪽에서 사용.
 export function useConsumables() {
   const nav = useNavigate()
   const toast = useToast()
+  const { authHeaders, householdId } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [brands, setBrands] = useState({})
+
+  const hdrs = useCallback(() => ({
+    'Content-Type': 'application/json',
+    ...authHeaders(),
+  }), [authHeaders])
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await fetch('/api/consumables')
+      const r = await fetch('/api/consumables', { headers: authHeaders() })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setItems(await r.json())
       setError(null)
@@ -23,9 +30,22 @@ export function useConsumables() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [authHeaders])
 
-  useEffect(() => { load() }, [load])
+  const loadBrands = useCallback(async () => {
+    try {
+      const r = await fetch('/api/brands', { headers: authHeaders() })
+      if (!r.ok) return
+      const data = await r.json()
+      setBrands(data.brands || {})
+    } catch {}
+  }, [authHeaders])
+
+  useEffect(() => { load(); loadBrands() }, [load, loadBrands])
+
+  useRealtime('consumables', householdId, useCallback(() => {
+    load()
+  }, [load]))
 
   const onStockChange = useCallback(async (item, nextStock) => {
     setItems((list) =>
@@ -34,7 +54,7 @@ export function useConsumables() {
     try {
       const r = await fetch(`/api/consumables/${item.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: hdrs(),
         body: JSON.stringify({ current_stock: nextStock }),
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -44,18 +64,16 @@ export function useConsumables() {
       toast(`❌ 저장 실패: ${e.message}`)
       load()
     }
-  }, [toast, load])
+  }, [toast, load, hdrs])
 
-  // 일반화된 PATCH 헬퍼 — 임의 필드를 한꺼번에 업데이트
   const onUpdate = useCallback(async (item, patch) => {
-    // optimistic update
     setItems((list) =>
       list.map((i) => (i.id === item.id ? { ...i, ...patch } : i)),
     )
     try {
       const r = await fetch(`/api/consumables/${item.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: hdrs(),
         body: JSON.stringify(patch),
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -67,24 +85,28 @@ export function useConsumables() {
       load()
       throw e
     }
-  }, [toast, load])
+  }, [toast, load, hdrs])
 
   const onDelete = useCallback(async (item) => {
     try {
-      const r = await fetch(`/api/consumables/${item.id}`, { method: 'DELETE' })
+      const r = await fetch(`/api/consumables/${item.id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setItems((list) => list.filter((i) => i.id !== item.id))
       toast(`🗑 "${item.name}" 삭제됨`)
     } catch (e) {
       toast(`❌ 삭제 실패: ${e.message}`)
     }
-  }, [toast])
+  }, [toast, authHeaders])
+
+  const getPreferredBrand = useCallback((name) => {
+    if (!name) return null
+    return brands[name.trim()] || null
+  }, [brands])
 
   const onRefresh = useCallback((item) => {
-    // /compare 로 넘길 때:
-    //   - query: 상품명 (bare)
-    //   - brand: 사용자가 Settings 에서 등록한 선호 브랜드 (있으면)
-    //   - ply: spec 에 "X겹" 있으면 추출
     const name = (item.name || '').trim()
     const preferred = getPreferredBrand(name)
 
@@ -94,7 +116,7 @@ export function useConsumables() {
       params.set('ply', item.spec.match(/(\d)\s*겹/)[1])
     }
     nav(`/compare?${params}`)
-  }, [nav])
+  }, [nav, getPreferredBrand])
 
   return {
     items,
@@ -105,5 +127,7 @@ export function useConsumables() {
     onUpdate,
     onDelete,
     onRefresh,
+    brands,
+    getPreferredBrand,
   }
 }

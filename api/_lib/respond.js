@@ -2,11 +2,12 @@
 // CORS + JSON 직렬화 + 예외 → HTTP status 매핑.
 
 import { BadRequest, NotFound } from './logic.js';
+import { Unauthorized, Forbidden } from './auth.js';
 
 function applyCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
 export function sendJson(res, data, status = 200) {
@@ -15,6 +16,12 @@ export function sendJson(res, data, status = 200) {
 }
 
 export function sendError(res, err) {
+  if (err instanceof Unauthorized) {
+    return sendJson(res, { detail: err.message }, 401);
+  }
+  if (err instanceof Forbidden) {
+    return sendJson(res, { detail: err.message }, 403);
+  }
   if (err instanceof BadRequest) {
     return sendJson(res, { detail: err.message }, 400);
   }

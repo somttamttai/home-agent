@@ -7,6 +7,9 @@
     { "source": "/api/consumables/(.*)", "destination": "/api/consumables" },
     { "source": "/api/prices/(.*)",      "destination": "/api/prices" },
     { "source": "/api/scan/(.*)",        "destination": "/api/scan" },
+    { "source": "/api/auth/(.*)",        "destination": "/api/auth" },
+    { "source": "/api/family",           "destination": "/api/family" },
+    { "source": "/api/brands",           "destination": "/api/brands" },
     { "source": "/api/health",           "destination": "/api/health" },
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ]

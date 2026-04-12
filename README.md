@@ -19,6 +19,10 @@
 | 네이버 최저가 비교 (단위당 가격) | ✅ |
 | 구매링크 바로가기 | ✅ |
 | 재고 부족 브라우저 푸시알림 | ✅ |
+| 구글/카카오 로그인 (Supabase Auth) | ✅ |
+| 가족 공유 (household + 초대코드) | ✅ |
+| Realtime 동기화 (다른 가족 수정 즉시 반영) | ✅ |
+| 가족설정 / 브랜드설정 DB 저장 | ✅ |
 | 바코드 스캔 | 🔒 준비중 |
 | 상품 사진 인식 (Claude Vision) | 🔒 준비중 |
 | 영수증 사진 인식 (Claude Vision) | 🔒 준비중 |
@@ -57,6 +61,71 @@ home-agent/
 
 ---
 
+## Supabase Auth 설정 (구글 + 카카오 로그인)
+
+### 1) Supabase 대시보드 기본 설정
+
+1. [Supabase Dashboard](https://supabase.com/dashboard) → 프로젝트 선택
+2. **Authentication → Providers** 에서 아래 두 가지 활성화
+
+### 2) 구글 로그인 설정
+
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) 접속
+2. **OAuth 2.0 클라이언트 ID** 생성 (웹 애플리케이션)
+3. **승인된 리디렉션 URI** 에 추가:
+   ```
+   https://<your-project-ref>.supabase.co/auth/v1/callback
+   ```
+4. 생성된 **Client ID** 와 **Client Secret** 복사
+5. Supabase Dashboard → **Authentication → Providers → Google**
+   - Enabled: ON
+   - Client ID: 붙여넣기
+   - Client Secret: 붙여넣기
+   - 저장
+
+### 3) 카카오 로그인 설정
+
+1. [Kakao Developers](https://developers.kakao.com/) 접속 → 애플리케이션 추가
+2. **앱 설정 → 플랫폼** 에서 Web 플랫폼 등록:
+   - 사이트 도메인: `https://your-app.vercel.app` (배포 URL)
+3. **제품 설정 → 카카오 로그인** 활성화
+4. **Redirect URI** 등록:
+   ```
+   https://<your-project-ref>.supabase.co/auth/v1/callback
+   ```
+5. **앱 키** 에서 **REST API 키** 복사
+6. **제품 설정 → 카카오 로그인 → 보안** 에서 **Client Secret** 생성
+7. Supabase Dashboard → **Authentication → Providers → Kakao**
+   - Enabled: ON
+   - Client ID: REST API 키 붙여넣기
+   - Client Secret: 위에서 생성한 Secret 붙여넣기
+   - 저장
+
+### 4) Supabase URL 설정
+
+1. Supabase Dashboard → **Authentication → URL Configuration**
+2. **Site URL**: `https://your-app.vercel.app` (배포 URL)
+3. **Redirect URLs** 에 추가:
+   ```
+   https://your-app.vercel.app
+   https://your-app.vercel.app/**
+   http://localhost:5173
+   http://localhost:5173/**
+   ```
+
+### 5) DB 마이그레이션
+
+Supabase Dashboard → **SQL Editor** 에서 `supabase_auth_migration.sql` 파일 내용을 실행.
+
+### 6) Realtime 활성화
+
+Supabase Dashboard → **Database → Replication** 에서 다음 테이블의 Realtime 활성화:
+- `consumables`
+- `family_settings`
+- `brand_preferences`
+
+---
+
 ## 로컬 개발
 
 ### 1) 환경변수 (`.env`)
@@ -66,6 +135,11 @@ SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1Ni...
 NAVER_CLIENT_ID=xxxxxxxx
 NAVER_CLIENT_SECRET=xxxxxxxx
+
+# 프론트엔드용 (Vite 에서 사용 — VITE_ prefix 필수)
+VITE_SUPABASE_URL=https://xxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1Ni...
+
 # ANTHROPIC_API_KEY 는 OCR 활성화 시에만 필요
 ANTHROPIC_API_KEY=sk-ant-api03-...
 # ENABLE_OCR=true   # 주석 해제 시 상품/영수증 인식 활성화
@@ -106,6 +180,8 @@ npm run dev
 |---|---|
 | `SUPABASE_URL` | Supabase 프로젝트 URL |
 | `SUPABASE_ANON_KEY` | Supabase anon public key |
+| `VITE_SUPABASE_URL` | 프론트엔드용 Supabase URL (SUPABASE_URL 과 동일) |
+| `VITE_SUPABASE_ANON_KEY` | 프론트엔드용 anon key (SUPABASE_ANON_KEY 와 동일) |
 | `NAVER_CLIENT_ID` | 네이버 개발자센터 애플리케이션 ID |
 | `NAVER_CLIENT_SECRET` | 네이버 개발자센터 시크릿 |
 

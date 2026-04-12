@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import { useToast } from '../components/Toast.jsx'
+import { useAuth } from '../hooks/useAuth.jsx'
 import { calcDailyUsage, expectedDays, getBaselineDays } from '../utils/consumption.js'
-import { effectivePeople, formatPeople, loadFamily } from '../utils/family.js'
+import { effectivePeople, formatPeople } from '../utils/family.js'
 
 export const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
 
@@ -104,11 +105,17 @@ function emptyManual(sp) {
 // ───────────────────────────────────────────────────────────────────────
 function ManualForm({ initial, onSaved }) {
   const toast = useToast()
+  const { authHeaders } = useAuth()
   const [form, setForm] = useState(initial)
   const [saving, setSaving] = useState(false)
+  const [family, setFamily] = useState({ adults: 2, children: 0 })
 
-  // 가족 인원은 mount 시 1회 로드 (Settings 에서 변경하면 다음 mount 에 반영)
-  const family = useMemo(() => loadFamily(), [])
+  useEffect(() => {
+    fetch('/api/family', { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((data) => setFamily({ adults: data.adults ?? 2, children: data.children ?? 0 }))
+      .catch(() => {})
+  }, [authHeaders])
   const people = effectivePeople(family)
 
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -158,7 +165,7 @@ function ManualForm({ initial, onSaved }) {
     try {
       const r = await fetch('/api/consumables', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(payload),
       })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -273,6 +280,7 @@ const PASTE_PLACEHOLDER = `[크리넥스] 순수 소프트 화장지 3겹 30m 30
 
 function PasteForm({ onSaved }) {
   const toast = useToast()
+  const { authHeaders } = useAuth()
   const [text, setText] = useState('')
   const [parsing, setParsing] = useState(false)
   const [parser, setParser] = useState(null)
@@ -331,7 +339,7 @@ function PasteForm({ onSaved }) {
         }
         const r = await fetch('/api/consumables', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
           body: JSON.stringify(payload),
         })
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
