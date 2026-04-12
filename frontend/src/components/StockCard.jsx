@@ -5,6 +5,7 @@ import { useToast } from './Toast.jsx'
 import { calcDailyUsage, getBaselineDays } from '../utils/consumption.js'
 import { effectivePeople, formatPeople } from '../utils/family.js'
 import { useAuth } from '../hooks/useAuth.jsx'
+import { SENSE_LEVELS, stockToSense, senseToStock } from '../utils/stockMode.js'
 
 const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
 
@@ -84,7 +85,26 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
           <div style={{ width: `${pct}%` }} />
         </div>
 
-        {onStockChange && (
+        {onStockChange && !max_stock && daily_usage > 0 && (
+          <div className="sense-controls">
+            {SENSE_LEVELS.map((l) => {
+              const active = stockToSense(days_left) === l.key
+              return (
+                <button
+                  key={l.key}
+                  type="button"
+                  className={`sense-btn ${active ? 'active' : ''} ${l.key}`}
+                  onClick={() => onStockChange(item, senseToStock(l.key, daily_usage))}
+                >
+                  <span className="icon">{l.icon}</span>
+                  <span className="text">{l.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {onStockChange && (max_stock > 0 || !daily_usage) && (
           <div className="stock-controls">
             <button type="button" onClick={onMinus} aria-label="재고 감소">−</button>
             <span className="current">

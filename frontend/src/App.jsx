@@ -10,6 +10,7 @@ import Settings from './pages/Settings.jsx'
 import Login from './pages/Login.jsx'
 import HouseholdSetup from './pages/HouseholdSetup.jsx'
 import InviteCode from './pages/InviteCode.jsx'
+import Onboarding from './pages/Onboarding.jsx'
 import TabBar from './components/TabBar.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 
@@ -29,6 +30,7 @@ function AppRoutes() {
 
   if (!session) return <Login />
   if (!household) return <HouseholdSetup />
+  if (!household.onboarded) return <Onboarding />
 
   return (
     <div className="app">

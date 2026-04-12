@@ -110,6 +110,20 @@ export default async function handler(req, res) {
       return sendJson(res, { invite_code: rows[0].invite_code });
     }
 
+    // POST /api/auth/onboarded — 온보딩 완료 표시
+    if (path === '/api/auth/onboarded' && method === 'POST') {
+      const user = await authenticateUser(req);
+      const householdId = await getHouseholdId(user.id);
+      if (!householdId) throw new NotFound('소속된 집이 없습니다');
+
+      await supabaseAdmin(`households?id=eq.${householdId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ onboarded: true }),
+      });
+
+      return sendJson(res, { ok: true });
+    }
+
     throw new NotFound(`no route: ${method} ${path}`);
   } catch (e) {
     if (e instanceof Unauthorized) return sendJson(res, { detail: e.message }, 401);
