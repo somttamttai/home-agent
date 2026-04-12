@@ -58,10 +58,8 @@ function StepNav({ step, doneStep, categories }) {
           return (
             <span key={i} className="ob-crumb-wrap">
               {i > 0 && <span className="ob-crumb-sep">›</span>}
-              <span
-                ref={isActive ? activeRef : null}
-                className={`ob-crumb ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`}
-              >
+              <span ref={isActive ? activeRef : null}
+                className={`ob-crumb ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`}>
                 {isDone && <span className="check">✓</span>}
                 {c.label}
               </span>
@@ -102,9 +100,7 @@ function LoadingScreen({ total, current, currentName }) {
           <div className="ob-loading-gauge-fill" style={{ width: `${pct}%` }} />
         </div>
         <div className="ob-loading-count">{current} / {total}개 등록 중</div>
-        {currentName && (
-          <div className="ob-loading-name">{currentName}</div>
-        )}
+        {currentName && <div className="ob-loading-name">{currentName}</div>}
       </div>
       <div className="ob-loading-bottom">
         <div className={`ob-loading-tip ${tipVisible ? 'visible' : ''}`}>
@@ -142,27 +138,47 @@ function StepFamily({ family, setFamily }) {
         onChange={(n) => setFamily((f) => ({ ...f, children: n }))} />
       <Counter label="유아" hint="0~3세" value={family.infants}
         onChange={(n) => setFamily((f) => ({ ...f, infants: n }))} />
+      <Counter label="🐾 반려동물" hint="마리 수" value={family.pets}
+        onChange={(n) => setFamily((f) => ({ ...f, pets: n }))} />
       {family.infants > 0 && (
-        <div className="ob-hint-card">유아용품 카테고리가 추가돼요</div>
+        <div className="ob-hint-card">유아용품 카테고리가 자동 추가돼요</div>
+      )}
+      {family.pets > 0 && (
+        <div className="ob-hint-card">반려동물 카테고리가 자동 추가돼요</div>
       )}
     </div>
   )
 }
 
 // ── 카테고리 선택 ────────────────────────────────────────────
-function StepCategories({ selected, setSelected, hasInfant }) {
+function StepCategories({ selected, setSelected, family }) {
+  const autoLocked = useMemo(() => {
+    const locked = {}
+    for (const cat of ALL_CATEGORIES) {
+      if (cat.auto === 'infants' && family.infants > 0) locked[cat.key] = true
+      if (cat.auto === 'pets' && family.pets > 0) locked[cat.key] = true
+    }
+    return locked
+  }, [family])
+
   const cats = useMemo(
-    () => ALL_CATEGORIES.filter((c) => !c.infant || hasInfant),
-    [hasInfant],
+    () => ALL_CATEGORIES.filter((c) => {
+      if (c.auto === 'infants') return family.infants > 0
+      if (c.auto === 'pets') return family.pets > 0
+      return true
+    }),
+    [family],
   )
 
   useEffect(() => {
-    if (hasInfant && !selected.includes('유아용품')) {
-      setSelected((s) => [...s, '유아용품'])
+    const toAdd = Object.keys(autoLocked).filter((k) => !selected.includes(k))
+    if (toAdd.length > 0) {
+      setSelected((s) => [...s, ...toAdd])
     }
-  }, [hasInfant, selected, setSelected])
+  }, [autoLocked, selected, setSelected])
 
   const toggle = (key) => {
+    if (autoLocked[key]) return
     setSelected((s) => s.includes(key) ? s.filter((k) => k !== key) : [...s, key])
   }
 
@@ -170,15 +186,25 @@ function StepCategories({ selected, setSelected, hasInfant }) {
     <div className="ob-step">
       <div className="ob-title">어떤 공간의 소모품을 관리할까요?</div>
       <div className="ob-cat-grid">
-        {cats.map((c) => (
-          <button key={c.key} type="button"
-            className={`ob-cat-card ${selected.includes(c.key) ? 'selected' : ''}`}
-            onClick={() => toggle(c.key)}>
-            <span className="icon">{c.icon}</span>
-            <span className="label">{c.key}</span>
-          </button>
-        ))}
+        {cats.map((c) => {
+          const isLocked = !!autoLocked[c.key]
+          const isSelected = selected.includes(c.key)
+          return (
+            <button key={c.key} type="button"
+              className={`ob-cat-card ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''}`}
+              onClick={() => toggle(c.key)}>
+              <span className="icon">{c.icon}</span>
+              <span className="label">{c.key}</span>
+              {isLocked && <span className="lock-badge">🔒</span>}
+            </button>
+          )
+        })}
       </div>
+      {Object.keys(autoLocked).length > 0 && (
+        <div className="ob-hint-card" style={{ marginTop: 12 }}>
+          🔒 가족 구성원에 맞춰 자동 추가된 카테고리예요
+        </div>
+      )}
       {selected.length === 0 && (
         <div className="ob-warn">최소 1개 카테고리를 선택해주세요</div>
       )}
@@ -305,7 +331,7 @@ export default function Onboarding() {
   const [done, setDone] = useState(false)
   const [saveProgress, setSaveProgress] = useState({ total: 0, current: 0, name: '' })
 
-  const [family, setFamily] = useState({ adults: 2, children: 0, infants: 0 })
+  const [family, setFamily] = useState({ adults: 2, children: 0, infants: 0, pets: 0 })
   const [categories, setCategories] = useState(
     ALL_CATEGORIES.filter((c) => c.default).map((c) => c.key),
   )
@@ -370,6 +396,7 @@ export default function Onboarding() {
       })
 
       const people = effectivePeople({ adults: family.adults, children: family.children })
+      const pets = family.pets || 0
       const entries = Object.keys(selectedItems).filter((k) => selectedItems[k])
       setSaveProgress({ total: entries.length, current: 0, name: '' })
 
@@ -382,9 +409,15 @@ export default function Onboarding() {
 
         setSaveProgress({ total: entries.length, current: ok, name: tmpl.name })
 
-        const dailyUsage = people > 0 && tmpl.baselineDays > 0
-          ? Math.round((people / tmpl.baselineDays) * 10000) / 10000
-          : 0.03
+        let dailyUsage
+        if (tmpl.petItem && pets > 0) {
+          dailyUsage = Math.round((pets / tmpl.baselineDays) * 10000) / 10000
+        } else if (people > 0 && tmpl.baselineDays > 0) {
+          dailyUsage = Math.round((people / tmpl.baselineDays) * 10000) / 10000
+        } else {
+          dailyUsage = 0.03
+        }
+
         const sense = stockLevels[key] || 'good'
         const currentStock = senseToStock(sense, dailyUsage)
 
@@ -423,15 +456,11 @@ export default function Onboarding() {
     if (step === doneStep && !done && !saving) onFinish()
   }, [step, doneStep, done, saving, onFinish])
 
-  // 로딩 중이면 로딩 화면
   if (saving && !done) {
     return (
       <div className="ob-page">
-        <LoadingScreen
-          total={saveProgress.total}
-          current={saveProgress.current}
-          currentName={saveProgress.name}
-        />
+        <LoadingScreen total={saveProgress.total} current={saveProgress.current}
+          currentName={saveProgress.name} />
       </div>
     )
   }
@@ -439,10 +468,7 @@ export default function Onboarding() {
   const renderStep = () => {
     if (step === 0) return <StepFamily family={family} setFamily={setFamily} />
     if (step === 1) {
-      return (
-        <StepCategories selected={categories} setSelected={setCategories}
-          hasInfant={family.infants > 0} />
-      )
+      return <StepCategories selected={categories} setSelected={setCategories} family={family} />
     }
     if (step >= 2 && step < doneStep) {
       const catIdx = Math.floor((step - 2) / 2)
@@ -475,21 +501,15 @@ export default function Onboarding() {
         )}
         {!isDone && !isLastCatStock && (
           <button type="button" className="btn" onClick={onNext}
-            disabled={!canNext} style={{ marginLeft: 'auto' }}>
-            다음
-          </button>
+            disabled={!canNext} style={{ marginLeft: 'auto' }}>다음</button>
         )}
         {isLastCatStock && (
           <button type="button" className="btn" onClick={onNext}
-            style={{ marginLeft: 'auto' }}>
-            완료
-          </button>
+            style={{ marginLeft: 'auto' }}>완료</button>
         )}
         {isDone && done && (
           <button type="button" className="btn block lg"
-            onClick={() => window.location.reload()}>
-            시작하기
-          </button>
+            onClick={() => window.location.reload()}>시작하기</button>
         )}
       </div>
     </div>

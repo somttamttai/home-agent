@@ -2010,6 +2010,19 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   border-color: var(--primary);
   background: var(--primary-light);
 }
+.ob-cat-card.locked {
+  opacity: 0.85;
+  cursor: default;
+}
+.ob-cat-card .lock-badge {
+  font-size: 12px;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.ob-cat-card {
+  position: relative;
+}
 
 /* Item chips */
 .ob-item-section { margin-bottom: 20px; }

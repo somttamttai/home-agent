@@ -38,8 +38,8 @@ export default function Settings() {
   const toast = useToast()
   const nav = useNavigate()
   const { authHeaders, household, user, signOut } = useAuth()
-  const [form, setForm] = useState({ adults: 2, children: 0, infants: 0 })
-  const [initial, setInitial] = useState({ adults: 2, children: 0, infants: 0 })
+  const [form, setForm] = useState({ adults: 2, children: 0, infants: 0, pets: 0 })
+  const [initial, setInitial] = useState({ adults: 2, children: 0, infants: 0, pets: 0 })
   const [loaded, setLoaded] = useState(false)
 
   const loadSettings = useCallback(async () => {
@@ -51,6 +51,7 @@ export default function Settings() {
         adults: data.adults ?? 2,
         children: data.children ?? 0,
         infants: data.infants ?? 0,
+        pets: data.pets ?? 0,
       }
       setForm(f)
       setInitial(f)
@@ -63,6 +64,7 @@ export default function Settings() {
   const setAdults = (n) => setForm((f) => ({ ...f, adults: n }))
   const setChildren = (n) => setForm((f) => ({ ...f, children: n }))
   const setInfants = (n) => setForm((f) => ({ ...f, infants: n }))
+  const setPets = (n) => setForm((f) => ({ ...f, pets: n }))
 
   const onSave = async () => {
     try {
@@ -86,7 +88,8 @@ export default function Settings() {
   const isDirty =
     form.adults !== initial.adults ||
     form.children !== initial.children ||
-    form.infants !== initial.infants
+    form.infants !== initial.infants ||
+    form.pets !== initial.pets
 
   return (
     <div>
@@ -137,6 +140,12 @@ export default function Settings() {
           hint="3세 이하"
           value={form.infants}
           onChange={setInfants}
+        />
+        <Counter
+          label="🐾 반려동물"
+          hint="마리 수"
+          value={form.pets}
+          onChange={setPets}
         />
 
         <div

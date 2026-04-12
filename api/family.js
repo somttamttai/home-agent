@@ -31,6 +31,7 @@ export default async function handler(req, res) {
         adults: body.adults != null ? Number(body.adults) : 2,
         children: body.children != null ? Number(body.children) : 0,
         infants: body.infants != null ? Number(body.infants) : 0,
+        pets: body.pets != null ? Number(body.pets) : 0,
         updated_at: new Date().toISOString(),
       };
 

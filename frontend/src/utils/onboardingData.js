@@ -8,8 +8,8 @@ export const ALL_CATEGORIES = [
   { key: '침실',     icon: '🛏', default: false },
   { key: '드레스룸', icon: '👔', default: false },
   { key: '건강',     icon: '💊', default: false },
-  { key: '반려동물', icon: '🐾', default: false },
-  { key: '유아용품', icon: '🍼', infant: true },
+  { key: '반려동물', icon: '🐾', auto: 'pets' },
+  { key: '유아용품', icon: '🍼', auto: 'infants' },
 ]
 
 export const ITEMS_BY_CATEGORY = {
@@ -102,9 +102,13 @@ export const ITEMS_BY_CATEGORY = {
     { name: '소독솜',     brand: '',   spec: '40매',   baselineDays: 60 },
   ],
   '반려동물': [
-    { name: '펫패드',         brand: '',   spec: '50매',    baselineDays: 10 },
-    { name: '사료',           brand: '',   spec: '2kg',     baselineDays: 14 },
-    { name: '간식',           brand: '',   spec: '1봉',     baselineDays: 7 },
-    { name: '반려동물샴푸',   brand: '',   spec: '500ml',   baselineDays: 30 },
+    { name: '펫패드',         brand: '',   spec: '50매',    baselineDays: 1,   petItem: true },
+    { name: '사료',           brand: '',   spec: '2kg',     baselineDays: 1,   petItem: true },
+    { name: '간식',           brand: '',   spec: '1봉',     baselineDays: 3,   petItem: true },
+    { name: '반려동물샴푸',   brand: '',   spec: '500ml',   baselineDays: 30,  petItem: true },
+    { name: '배변봉투',       brand: '',   spec: '100매',   baselineDays: 2,   petItem: true },
+    { name: '모래/펫시트',    brand: '',   spec: '1봉',     baselineDays: 10,  petItem: true },
+    { name: '구충제',         brand: '',   spec: '1개',     baselineDays: 90,  petItem: true },
+    { name: '칫솔(펫용)',     brand: '',   spec: '1개',     baselineDays: 30,  petItem: true },
   ],
 }
