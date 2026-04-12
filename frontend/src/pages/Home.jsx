@@ -42,7 +42,9 @@ function AddCategoryModal({ open, onClose, onSave }) {
     try {
       await onSave(name.trim(), icon)
       onClose()
-    } catch {}
+    } catch (e) {
+      console.error('카테고리 추가 실패:', e)
+    }
     setSaving(false)
   }
 
@@ -122,8 +124,13 @@ export default function Home() {
   const safe = items.length - low.length
 
   const onAddCat = async (name, icon) => {
-    await addCategory(name, icon)
-    toast(`✅ "${name}" 카테고리 추가됨`)
+    try {
+      await addCategory(name, icon)
+      toast(`✅ "${name}" 카테고리 추가됨`)
+    } catch (e) {
+      toast(`❌ ${e.message}`)
+      throw e
+    }
   }
 
   return (

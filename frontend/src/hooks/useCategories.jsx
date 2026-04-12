@@ -8,6 +8,9 @@ const DEFAULT_CATEGORIES = [
   { key: '청소',     icon: '🧹' },
   { key: '침실',     icon: '🛏' },
   { key: '드레스룸', icon: '👔' },
+  { key: '건강',     icon: '💊' },
+  { key: '반려동물', icon: '🐾' },
+  { key: '유아용품', icon: '🍼' },
   { key: '기타',     icon: '📦' },
 ]
 
@@ -45,9 +48,13 @@ export function CategoriesProvider({ children }) {
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name, icon }),
     })
-    if (!r.ok) throw new Error('추가 실패')
-    await load()
-  }, [authHeaders, load])
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      throw new Error(err.detail || '추가 실패')
+    }
+    const data = await r.json()
+    setCustom(data.custom || [])
+  }, [authHeaders])
 
   const updateCategory = useCallback(async (oldName, name, icon) => {
     const r = await fetch('/api/categories', {
@@ -55,9 +62,13 @@ export function CategoriesProvider({ children }) {
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ old_name: oldName, name, icon }),
     })
-    if (!r.ok) throw new Error('수정 실패')
-    await load()
-  }, [authHeaders, load])
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      throw new Error(err.detail || '수정 실패')
+    }
+    const data = await r.json()
+    setCustom(data.custom || [])
+  }, [authHeaders])
 
   const deleteCategory = useCallback(async (name) => {
     const r = await fetch('/api/categories', {
@@ -65,9 +76,13 @@ export function CategoriesProvider({ children }) {
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name }),
     })
-    if (!r.ok) throw new Error('삭제 실패')
-    await load()
-  }, [authHeaders, load])
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}))
+      throw new Error(err.detail || '삭제 실패')
+    }
+    const data = await r.json()
+    setCustom(data.custom || [])
+  }, [authHeaders])
 
   const value = {
     categories: all,

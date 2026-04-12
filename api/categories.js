@@ -15,8 +15,13 @@ export default async function handler(req, res) {
 
     if (path !== '/api/categories') throw new NotFound(`no route: ${method} ${path}`);
 
-    const rows = await supabaseAdmin(`households?id=eq.${householdId}&select=custom_categories`);
-    const current = (rows && rows[0]?.custom_categories) || [];
+    let current = [];
+    try {
+      const rows = await supabaseAdmin(`households?id=eq.${householdId}&select=custom_categories`);
+      current = (rows && rows[0]?.custom_categories) || [];
+    } catch {
+      current = [];
+    }
 
     // GET
     if (method === 'GET') {
