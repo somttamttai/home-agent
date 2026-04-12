@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
 
   try {
-    const { user, householdId } = await authenticateRequest(req);
+    const { user, token, householdId } = await authenticateRequest(req);
     if (!householdId) throw new BadRequest('소속된 집이 없습니다');
 
     const { path } = parseUrl(req);
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 
     let current = [];
     try {
-      const rows = await supabaseAdmin(`households?id=eq.${householdId}&select=custom_categories`);
+      const rows = await supabaseAdmin(`households?id=eq.${householdId}&select=custom_categories`, {}, token);
       current = (rows && rows[0]?.custom_categories) || [];
     } catch {
       current = [];
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       return sendJson(res, { custom: current });
     }
 
-    // POST — 추가
+    // POST
     if (method === 'POST') {
       const body = readBody(req);
       const name = (body.name || '').trim();
@@ -37,21 +37,14 @@ export default async function handler(req, res) {
       if (current.some((c) => c.key === name)) throw new BadRequest('이미 있는 카테고리입니다');
 
       const updated = [...current, { key: name, icon }];
-      try {
-        await supabaseAdmin(`households?id=eq.${householdId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ custom_categories: updated }),
-        });
-      } catch (err) {
-        if (err.message?.includes('custom_categories')) {
-          throw new BadRequest('DB에 custom_categories 컬럼이 없습니다. SQL 마이그레이션을 실행해주세요.');
-        }
-        throw err;
-      }
+      await supabaseAdmin(`households?id=eq.${householdId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ custom_categories: updated }),
+      }, token);
       return sendJson(res, { custom: updated }, 201);
     }
 
-    // PATCH — 수정
+    // PATCH
     if (method === 'PATCH') {
       const body = readBody(req);
       const oldName = (body.old_name || '').trim();
@@ -66,19 +59,19 @@ export default async function handler(req, res) {
       await supabaseAdmin(`households?id=eq.${householdId}`, {
         method: 'PATCH',
         body: JSON.stringify({ custom_categories: updated }),
-      });
+      }, token);
 
       if (newName && newName !== oldName) {
         await supabaseAdmin(`consumables?household_id=eq.${householdId}&category=eq.${encodeURIComponent(oldName)}`, {
           method: 'PATCH',
           body: JSON.stringify({ category: newName }),
-        });
+        }, token);
       }
 
       return sendJson(res, { custom: updated });
     }
 
-    // DELETE — 삭제
+    // DELETE
     if (method === 'DELETE') {
       const body = readBody(req);
       const name = (body.name || '').trim();
@@ -88,12 +81,12 @@ export default async function handler(req, res) {
       await supabaseAdmin(`households?id=eq.${householdId}`, {
         method: 'PATCH',
         body: JSON.stringify({ custom_categories: updated }),
-      });
+      }, token);
 
       await supabaseAdmin(`consumables?household_id=eq.${householdId}&category=eq.${encodeURIComponent(name)}`, {
         method: 'PATCH',
         body: JSON.stringify({ category: '기타' }),
-      });
+      }, token);
 
       return sendJson(res, { custom: updated });
     }

@@ -1,18 +1,18 @@
-// Supabase REST API wrapper — service_role 키로 RLS 우회
-// 서버 사이드에서는 앱 레벨 인가 후 service_role 키로 DB 접근
+// Supabase REST API wrapper
+// service_role 키가 있으면 RLS 우회, 없으면 전달된 토큰 사용
 
 function base() {
   return `${process.env.SUPABASE_URL}/rest/v1`;
 }
 
-function serviceKey() {
+function getKey() {
   return process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 }
 
 function headers(extra = {}) {
-  const key = serviceKey();
+  const key = getKey();
   return {
-    apikey: key,
+    apikey: process.env.SUPABASE_ANON_KEY,
     Authorization: `Bearer ${key}`,
     'Content-Type': 'application/json',
     ...extra,

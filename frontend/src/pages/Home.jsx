@@ -282,10 +282,8 @@ export default function Home() {
                     <div className="name">{cat}</div>
                     <div className="total">{c.total}<span className="unit">개</span></div>
                     <div className="breakdown">여유 {c.total - c.low} · 부족 {c.low}</div>
-                    {isCustom && (
-                      <button type="button" className="cat-more-btn"
-                        onClick={(e) => openCatSheet(e, cat)}>⋯</button>
-                    )}
+                    <button type="button" className="cat-more-btn"
+                      onClick={(e) => openCatSheet(e, cat)}>⋯</button>
                   </button>
                 )
               })}

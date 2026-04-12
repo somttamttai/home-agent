@@ -1,10 +1,13 @@
 // JWT 인증 미들웨어 — Supabase Auth 토큰 검증
-// 서버 사이드: service_role 키로 RLS 우회 (앱 레벨에서 인가 처리)
-// 클라이언트 인증: Authorization 헤더의 JWT로 사용자 확인
+// service_role 키가 있으면 사용 (RLS 우회)
+// 없으면 사용자 JWT로 요청 (RLS 적용)
 
 const SUPABASE_URL = () => process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = () => process.env.SUPABASE_ANON_KEY;
-const SUPABASE_SERVICE_KEY = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+function getServerKey() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || null;
+}
 
 export class Unauthorized extends Error {
   constructor(message = '인증이 필요합니다') {
@@ -42,15 +45,17 @@ export async function authenticateUser(req) {
   return user;
 }
 
-// service_role 키로 Supabase REST 호출 (RLS 우회)
-export async function supabaseAdmin(path, options = {}) {
-  const key = SUPABASE_SERVICE_KEY();
+// 서버 사이드 Supabase REST 호출
+// service_role 키가 있으면 사용, 없으면 userToken으로 폴백
+export async function supabaseAdmin(path, options = {}, userToken = null) {
+  const serviceKey = getServerKey();
+  const bearerToken = serviceKey || userToken || SUPABASE_ANON_KEY();
   const url = `${SUPABASE_URL()}/rest/v1/${path}`;
   const r = await fetch(url, {
     ...options,
     headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
+      apikey: SUPABASE_ANON_KEY(),
+      Authorization: `Bearer ${bearerToken}`,
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
       ...(options.headers || {}),
@@ -65,17 +70,20 @@ export async function supabaseAdmin(path, options = {}) {
   return null;
 }
 
-export async function getHouseholdId(userId) {
+export async function getHouseholdId(userId, userToken = null) {
   const rows = await supabaseAdmin(
-    `household_members?user_id=eq.${userId}&limit=1`
+    `household_members?user_id=eq.${userId}&limit=1`,
+    {},
+    userToken,
   );
   return rows && rows.length > 0 ? rows[0].household_id : null;
 }
 
 export async function authenticateRequest(req) {
+  const token = extractToken(req);
   const user = await authenticateUser(req);
-  const householdId = await getHouseholdId(user.id);
-  return { user, householdId };
+  const householdId = await getHouseholdId(user.id, token);
+  return { user, token, householdId };
 }
 
 function generateInviteCode() {

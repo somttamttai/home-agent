@@ -9,8 +9,8 @@ export const SENSE_LEVELS = [
 export function senseToStock(senseKey, dailyUsage) {
   const du = Number(dailyUsage) || 0.03
   const level = SENSE_LEVELS.find((l) => l.key === senseKey)
-  if (!level) return Math.round(du * 30)
-  return Math.round(du * level.days)
+  if (!level) return du * 30
+  return du * level.days
 }
 
 export function stockToSense(daysLeft) {

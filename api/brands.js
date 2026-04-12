@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
 
   try {
-    const { user, householdId } = await authenticateRequest(req);
+    const { user, token, householdId } = await authenticateRequest(req);
     if (!householdId) throw new BadRequest('소속된 집이 없습니다');
 
     const { path } = parseUrl(req);
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     // GET /api/brands
     if (path === '/api/brands' && method === 'GET') {
       const rows = await supabaseAdmin(
-        `brand_preferences?household_id=eq.${householdId}&order=item_name.asc`
+        `brand_preferences?household_id=eq.${householdId}&order=item_name.asc`, {}, token
       );
       const map = {};
       for (const row of (rows || [])) {
@@ -25,14 +25,15 @@ export default async function handler(req, res) {
       return sendJson(res, { brands: map, rows: rows || [] });
     }
 
-    // POST /api/brands — 전체 저장 (upsert)
+    // POST /api/brands
     if (path === '/api/brands' && method === 'POST') {
       const body = readBody(req);
       const brands = body.brands || {};
 
       await supabaseAdmin(
         `brand_preferences?household_id=eq.${householdId}`,
-        { method: 'DELETE' }
+        { method: 'DELETE' },
+        token,
       );
 
       const entries = Object.entries(brands).filter(([k, v]) => k && v);
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
         await supabaseAdmin('brand_preferences', {
           method: 'POST',
           body: JSON.stringify(rows),
-        });
+        }, token);
       }
 
       return sendJson(res, { ok: true, count: entries.length });

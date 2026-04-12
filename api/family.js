@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
 
   try {
-    const { user, householdId } = await authenticateRequest(req);
+    const { user, token, householdId } = await authenticateRequest(req);
     if (!householdId) throw new BadRequest('소속된 집이 없습니다');
 
     const { path } = parseUrl(req);
@@ -15,11 +15,9 @@ export default async function handler(req, res) {
 
     // GET /api/family
     if (path === '/api/family' && method === 'GET') {
-      const rows = await supabaseAdmin(
-        `family_settings?household_id=eq.${householdId}`
-      );
+      const rows = await supabaseAdmin(`family_settings?household_id=eq.${householdId}`, {}, token);
       if (!rows || rows.length === 0) {
-        return sendJson(res, { adults: 2, children: 0, infants: 0, household_id: householdId });
+        return sendJson(res, { adults: 2, children: 0, infants: 0, pets: 0, household_id: householdId });
       }
       return sendJson(res, rows[0]);
     }
@@ -35,14 +33,13 @@ export default async function handler(req, res) {
         updated_at: new Date().toISOString(),
       };
 
-      const existing = await supabaseAdmin(
-        `family_settings?household_id=eq.${householdId}`
-      );
+      const existing = await supabaseAdmin(`family_settings?household_id=eq.${householdId}`, {}, token);
 
       if (existing && existing.length > 0) {
         const updated = await supabaseAdmin(
           `family_settings?household_id=eq.${householdId}`,
-          { method: 'PATCH', body: JSON.stringify(patch) }
+          { method: 'PATCH', body: JSON.stringify(patch) },
+          token,
         );
         return sendJson(res, updated[0]);
       }
@@ -50,7 +47,7 @@ export default async function handler(req, res) {
       const created = await supabaseAdmin('family_settings', {
         method: 'POST',
         body: JSON.stringify({ household_id: householdId, ...patch }),
-      });
+      }, token);
       return sendJson(res, created[0], 201);
     }
 
