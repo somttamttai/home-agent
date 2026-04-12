@@ -13,7 +13,6 @@ import HouseholdSetup from './pages/HouseholdSetup.jsx'
 import InviteCode from './pages/InviteCode.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 import TabBar from './components/TabBar.jsx'
-import Sidebar from './components/Sidebar.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 
 function AppRoutes() {
@@ -36,8 +35,6 @@ function AppRoutes() {
 
   return (
     <CategoriesProvider>
-    <div className="app-shell">
-      <Sidebar />
       <div className="app">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -51,7 +48,6 @@ function AppRoutes() {
         </Routes>
         <TabBar />
       </div>
-    </div>
     </CategoriesProvider>
   )
 }

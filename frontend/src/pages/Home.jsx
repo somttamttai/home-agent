@@ -48,9 +48,7 @@ function CategoryModal({ open, onClose, onSave, initial }) {
     try {
       await onSave(name.trim(), icon)
       onClose()
-    } catch (e) {
-      console.error(e)
-    }
+    } catch {}
     setSaving(false)
   }
 
@@ -167,12 +165,6 @@ export default function Home() {
     }
   }
 
-  const openCatSheet = (e, cat) => {
-    e.stopPropagation()
-    setSheetCat(cat)
-    setConfirmDelete(false)
-  }
-
   return (
     <div>
       <div className="home-header">
@@ -212,12 +204,8 @@ export default function Home() {
           <div className="empty">
             <div className="big-icon">📦</div>
             <div className="title">아직 등록된 소모품이 없어요</div>
-            <div style={{ marginBottom: 20 }}>
-              하단 ＋ 버튼으로 첫 품목을 추가해보세요
-            </div>
-            <button className="btn" onClick={() => nav('/add')}>
-              ＋ 소모품 추가하기
-            </button>
+            <div style={{ marginBottom: 20 }}>하단 ＋ 버튼으로 첫 품목을 추가해보세요</div>
+            <button className="btn" onClick={() => nav('/add')}>＋ 소모품 추가하기</button>
           </div>
         )}
 
@@ -225,9 +213,7 @@ export default function Home() {
           <>
             {low.length > 0 && (
               <>
-                <div className="section-title" style={{ paddingTop: 0 }}>
-                  ⚠️ 지금 필요해요
-                </div>
+                <div className="section-title" style={{ paddingTop: 0 }}>⚠️ 지금 필요해요</div>
                 <div className="urgent-card">
                   {low.map((it) => {
                     const emoji = getIcon(it.category || '기타')
@@ -239,14 +225,10 @@ export default function Home() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="name">{it.name}</div>
                           {(it.brand || it.spec) && (
-                            <div className="meta">
-                              {[it.brand, it.spec].filter(Boolean).join(' · ')}
-                            </div>
+                            <div className="meta">{[it.brand, it.spec].filter(Boolean).join(' · ')}</div>
                           )}
                         </div>
-                        <span className={`dday-badge ${cls}`}>
-                          {formatDday(it.days_left)}
-                        </span>
+                        <span className={`dday-badge ${cls}`}>{formatDday(it.days_left)}</span>
                       </button>
                     )
                   })}
@@ -254,14 +236,10 @@ export default function Home() {
               </>
             )}
 
-            <div className="section-title" style={low.length > 0 ? {} : { paddingTop: 0 }}>
-              전체 현황
-            </div>
+            <div className="section-title" style={low.length > 0 ? {} : { paddingTop: 0 }}>전체 현황</div>
             <div className="summary-card">
               <div className="label">관리 중인 소모품</div>
-              <div className="big">
-                {items.length}<span className="unit">개</span>
-              </div>
+              <div className="big">{items.length}<span className="unit">개</span></div>
               <div className="summary-breakdown">
                 <span className="stat">✓ 여유 <strong>{safe}</strong>개</span>
                 <span className="stat">⚠️ 부족 <strong>{low.length}</strong>개</span>
@@ -282,8 +260,12 @@ export default function Home() {
                     <div className="name">{cat}</div>
                     <div className="total">{c.total}<span className="unit">개</span></div>
                     <div className="breakdown">여유 {c.total - c.low} · 부족 {c.low}</div>
-                    <button type="button" className="cat-more-btn"
-                      onClick={(e) => openCatSheet(e, cat)}>⋯</button>
+                    {isCustom && (
+                      <button type="button" className="cat-more-btn"
+                        onClick={(e) => { e.stopPropagation(); setSheetCat(cat); setConfirmDelete(false) }}>
+                        ⋯
+                      </button>
+                    )}
                   </button>
                 )
               })}
@@ -297,10 +279,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* 카테고리 추가 모달 */}
       <CategoryModal open={addCatOpen} onClose={() => setAddCatOpen(false)} onSave={onAddCat} />
 
-      {/* 카테고리 수정 모달 */}
       <CategoryModal
         open={!!editCat}
         onClose={() => setEditCat(null)}
@@ -308,7 +288,6 @@ export default function Home() {
         initial={editCat ? { name: editCat, icon: getIcon(editCat) } : null}
       />
 
-      {/* 카테고리 관리 바텀시트 */}
       <BottomSheet open={!!sheetCat} onClose={() => { setSheetCat(null); setConfirmDelete(false) }}
         title={sheetCat ? `${getIcon(sheetCat)} ${sheetCat}` : ''}>
         {!confirmDelete ? (
@@ -336,8 +315,7 @@ export default function Home() {
             <div className="confirm-actions">
               <button type="button" className="btn secondary"
                 onClick={() => setConfirmDelete(false)}>취소</button>
-              <button type="button" className="btn danger"
-                onClick={onDeleteCat}>삭제</button>
+              <button type="button" className="btn danger" onClick={onDeleteCat}>삭제</button>
             </div>
           </div>
         )}
