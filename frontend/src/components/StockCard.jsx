@@ -6,8 +6,7 @@ import { calcDailyUsage, getBaselineDays } from '../utils/consumption.js'
 import { effectivePeople, formatPeople } from '../utils/family.js'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { SENSE_LEVELS, stockToSense, senseToStock } from '../utils/stockMode.js'
-
-const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
+import { useCategories } from '../hooks/useCategories.jsx'
 
 // ───────────────────────────────────────────────────────────────────────
 // 메인 카드
@@ -19,8 +18,9 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
   } = item
 
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [activeModal, setActiveModal] = useState(null) // 'info' | 'brand' | 'consumption'
+  const [activeModal, setActiveModal] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showCatMove, setShowCatMove] = useState(false)
 
   const pct = max_stock && max_stock > 0
     ? Math.max(0, Math.min(100, (current_stock / max_stock) * 100))
@@ -36,6 +36,7 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
   const closeSheet = () => {
     setSheetOpen(false)
     setConfirmDelete(false)
+    setShowCatMove(false)
   }
   const openModal = (type) => {
     setSheetOpen(false)
@@ -128,41 +129,32 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
 
       {/* 바텀시트 */}
       <BottomSheet open={sheetOpen} onClose={closeSheet} title={name}>
-        {!confirmDelete ? (
+        {showCatMove ? (
+          <CatMoveList item={item} onUpdate={onUpdate} onClose={closeSheet} />
+        ) : !confirmDelete ? (
           <>
-            <button
-              type="button"
-              className="sheet-item"
-              onClick={() => openModal('info')}
-            >
+            <button type="button" className="sheet-item" onClick={() => openModal('info')}>
               <span className="icon">✏️</span>
               <span className="label">상품 정보 수정</span>
               <span className="chev">›</span>
             </button>
-            <button
-              type="button"
-              className="sheet-item"
-              onClick={() => openModal('brand')}
-            >
+            <button type="button" className="sheet-item" onClick={() => openModal('brand')}>
               <span className="icon">🏷️</span>
               <span className="label">선호 브랜드 설정</span>
               <span className="chev">›</span>
             </button>
-            <button
-              type="button"
-              className="sheet-item"
-              onClick={() => openModal('consumption')}
-            >
+            <button type="button" className="sheet-item" onClick={() => openModal('consumption')}>
               <span className="icon">📊</span>
               <span className="label">소비 속도 수정</span>
               <span className="chev">›</span>
             </button>
+            <button type="button" className="sheet-item" onClick={() => setShowCatMove(true)}>
+              <span className="icon">📂</span>
+              <span className="label">카테고리 이동</span>
+              <span className="chev">›</span>
+            </button>
             <div className="sheet-divider" />
-            <button
-              type="button"
-              className="sheet-item danger"
-              onClick={() => setConfirmDelete(true)}
-            >
+            <button type="button" className="sheet-item danger" onClick={() => setConfirmDelete(true)}>
               <span className="icon">🗑️</span>
               <span className="label">삭제</span>
             </button>
@@ -221,10 +213,43 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
 }
 
 // ───────────────────────────────────────────────────────────────────────
+// 카테고리 이동 리스트
+// ───────────────────────────────────────────────────────────────────────
+function CatMoveList({ item, onUpdate, onClose }) {
+  const toast = useToast()
+  const { categories } = useCategories()
+  const currentCat = item.category || '기타'
+
+  const onMove = async (cat) => {
+    if (cat === currentCat) return
+    try {
+      await onUpdate(item, { category: cat })
+      toast(`📂 "${item.name}" → ${cat}`)
+      onClose()
+    } catch {}
+  }
+
+  return (
+    <div>
+      {categories.map((c) => (
+        <button key={c.key} type="button"
+          className={`sheet-item ${c.key === currentCat ? 'active' : ''}`}
+          onClick={() => onMove(c.key)}>
+          <span className="icon">{c.icon}</span>
+          <span className="label">{c.key}</span>
+          {c.key === currentCat && <span className="chev">✓</span>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ───────────────────────────────────────────────────────────────────────
 // 상품 정보 수정 모달
 // ───────────────────────────────────────────────────────────────────────
 function InfoModal({ open, item, onClose, onUpdate }) {
   const toast = useToast()
+  const { categoryKeys } = useCategories()
   const [form, setForm] = useState(() => initInfo(item))
   const [saving, setSaving] = useState(false)
 
@@ -309,7 +334,7 @@ function InfoModal({ open, item, onClose, onUpdate }) {
       <div className="form-field" style={{ marginBottom: 0 }}>
         <label className="label">카테고리</label>
         <select value={form.category} onChange={setField('category')}>
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {categoryKeys.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
     </Modal>

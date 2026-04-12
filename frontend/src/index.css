@@ -1089,6 +1089,55 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 .category-grid-card.has-low .breakdown {
   color: #FF9500;
 }
+.category-grid-card.add-card {
+  border: 2px dashed var(--border-strong);
+  background: transparent;
+}
+.category-grid-card.add-card .icon {
+  font-size: 28px;
+  color: var(--text-hint);
+}
+.category-grid-card.add-card .name {
+  color: var(--text-hint);
+}
+
+/* ── Emoji Picker ────────────────────────────────────────── */
+.emoji-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.emoji-btn {
+  width: 40px; height: 40px;
+  font-size: 22px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.emoji-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.emoji-btn:active { transform: scale(0.92); }
+
+/* header more button */
+.header-more {
+  width: 44px; height: 44px;
+  background: none; border: none;
+  font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+/* sheet active item */
+.sheet-item.active { color: var(--primary); font-weight: 700; }
+.sheet-item.active .chev { color: var(--primary); }
 
 /* ── Category tabs (Home top) ─────────────────────────────── */
 .category-tabs {

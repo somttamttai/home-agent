@@ -10,6 +10,7 @@
     { "source": "/api/auth/(.*)",        "destination": "/api/auth" },
     { "source": "/api/family",           "destination": "/api/family" },
     { "source": "/api/brands",           "destination": "/api/brands" },
+    { "source": "/api/categories",       "destination": "/api/categories" },
     { "source": "/api/health",           "destination": "/api/health" },
     { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ]

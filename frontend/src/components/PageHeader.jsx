@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 
-export default function PageHeader({ title, onBack }) {
+export default function PageHeader({ title, onBack, children }) {
   const nav = useNavigate()
   const handleBack = onBack || (() => nav('/'))
   return (
@@ -9,7 +9,7 @@ export default function PageHeader({ title, onBack }) {
         ←
       </button>
       <h1>{title}</h1>
-      <div style={{ width: 44 }} />
+      {children || <div style={{ width: 44 }} />}
     </div>
   )
 }

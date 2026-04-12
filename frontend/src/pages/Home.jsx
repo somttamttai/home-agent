@@ -1,18 +1,12 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme.js'
 import { useConsumables } from '../hooks/useConsumables.js'
+import { useCategories } from '../hooks/useCategories.jsx'
+import Modal from '../components/Modal.jsx'
+import { useToast } from '../components/Toast.jsx'
 
-const CATEGORIES = ['욕실', '주방', '세탁실', '청소', '침실', '드레스룸', '기타']
-const CAT_ICON = {
-  욕실: '🛁',
-  주방: '🍳',
-  세탁실: '🧺',
-  청소: '🧹',
-  침실: '🛏',
-  드레스룸: '👔',
-  기타: '📦',
-}
+const EMOJI_PICKS = ['🛁','🍳','🧺','🧹','🛏','👔','🍼','💊','🐾','🚗','🏋️','📚','🎮','🐶','🧴','🪥','🧽','🧤','🌸','☕']
 
 function greeting() {
   const h = new Date().getHours()
@@ -35,22 +29,64 @@ function formatDday(daysLeft) {
   return `D-${Math.floor(daysLeft)}`
 }
 
+function AddCategoryModal({ open, onClose, onSave }) {
+  const [name, setName] = useState('')
+  const [icon, setIcon] = useState('📦')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => { if (open) { setName(''); setIcon('📦') } }, [open])
+
+  const handleSave = async () => {
+    if (!name.trim()) return
+    setSaving(true)
+    try {
+      await onSave(name.trim(), icon)
+      onClose()
+    } catch {}
+    setSaving(false)
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="카테고리 추가"
+      actions={<>
+        <button type="button" className="btn secondary" onClick={onClose}>취소</button>
+        <button type="button" className="btn" onClick={handleSave} disabled={saving || !name.trim()}>
+          {saving ? '저장중…' : '저장'}
+        </button>
+      </>}>
+      <div className="form-field">
+        <label className="label">이모지</label>
+        <div className="emoji-picker">
+          {EMOJI_PICKS.map((e) => (
+            <button key={e} type="button"
+              className={`emoji-btn ${icon === e ? 'active' : ''}`}
+              onClick={() => setIcon(e)}>{e}</button>
+          ))}
+        </div>
+      </div>
+      <div className="form-field" style={{ marginBottom: 0 }}>
+        <label className="label">카테고리 이름 <span className="required">*</span></label>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 자동차" />
+      </div>
+    </Modal>
+  )
+}
+
 export default function Home() {
   const nav = useNavigate()
   const { theme, toggle } = useTheme()
   const { items, loading, error, reload, onRefresh } = useConsumables()
+  const { categories, getIcon, addCategory } = useCategories()
+  const toast = useToast()
+  const [addCatOpen, setAddCatOpen] = useState(false)
 
-  // 알림 권한
   useEffect(() => {
     if (!('Notification' in window)) return
-    if (Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
+    if (Notification.permission === 'default') Notification.requestPermission()
   }, [])
 
   const low = useMemo(() => items.filter((i) => i.need_reorder), [items])
 
-  // 부족 품목 푸시알림
   useEffect(() => {
     if (low.length === 0) return
     if ('Notification' in window && Notification.permission === 'granted') {
@@ -63,10 +99,11 @@ export default function Home() {
     }
   }, [low])
 
-  // 카테고리별 카운트
+  const catKeys = useMemo(() => categories.map((c) => c.key), [categories])
+
   const counts = useMemo(() => {
     const c = {}
-    for (const cat of CATEGORIES) c[cat] = { total: 0, low: 0 }
+    for (const cat of catKeys) c[cat] = { total: 0, low: 0 }
     for (const it of items) {
       const cat = it.category || '기타'
       if (!c[cat]) c[cat] = { total: 0, low: 0 }
@@ -74,15 +111,20 @@ export default function Home() {
       if (it.need_reorder) c[cat].low += 1
     }
     return c
-  }, [items])
+  }, [items, catKeys])
 
   const visibleCategories = useMemo(
-    () => CATEGORIES.filter((c) => counts[c].total > 0),
-    [counts],
+    () => catKeys.filter((c) => counts[c]?.total > 0),
+    [counts, catKeys],
   )
 
   const themeIcon = theme === 'dark' ? '☀️' : '🌙'
   const safe = items.length - low.length
+
+  const onAddCat = async (name, icon) => {
+    await addCategory(name, icon)
+    toast(`✅ "${name}" 카테고리 추가됨`)
+  }
 
   return (
     <div>
@@ -98,20 +140,10 @@ export default function Home() {
           </div>
         </div>
         <div className="header-actions">
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={toggle}
-            aria-label="테마 전환"
-          >
+          <button type="button" className="theme-toggle" onClick={toggle} aria-label="테마 전환">
             {themeIcon}
           </button>
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() => nav('/settings')}
-            aria-label="설정"
-          >
+          <button type="button" className="theme-toggle" onClick={() => nav('/settings')} aria-label="설정">
             ⚙️
           </button>
         </div>
@@ -144,7 +176,6 @@ export default function Home() {
 
         {!loading && !error && items.length > 0 && (
           <>
-            {/* 1. 지금 필요해요 (재주문 필요한 품목만) */}
             {low.length > 0 && (
               <>
                 <div className="section-title" style={{ paddingTop: 0 }}>
@@ -152,15 +183,11 @@ export default function Home() {
                 </div>
                 <div className="urgent-card">
                   {low.map((it) => {
-                    const emoji = CAT_ICON[it.category || '기타']
+                    const emoji = getIcon(it.category || '기타')
                     const cls = ddayClass(it.days_left)
                     return (
-                      <button
-                        key={it.id}
-                        type="button"
-                        className="urgent-row"
-                        onClick={() => onRefresh(it)}
-                      >
+                      <button key={it.id} type="button" className="urgent-row"
+                        onClick={() => onRefresh(it)}>
                         <span className="emoji">{emoji}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="name">{it.name}</div>
@@ -180,11 +207,7 @@ export default function Home() {
               </>
             )}
 
-            {/* 2. 전체 현황 카드 */}
-            <div
-              className="section-title"
-              style={low.length > 0 ? {} : { paddingTop: 0 }}
-            >
+            <div className="section-title" style={low.length > 0 ? {} : { paddingTop: 0 }}>
               전체 현황
             </div>
             <div className="summary-card">
@@ -193,43 +216,38 @@ export default function Home() {
                 {items.length}<span className="unit">개</span>
               </div>
               <div className="summary-breakdown">
-                <span className="stat">
-                  ✓ 여유 <strong>{safe}</strong>개
-                </span>
-                <span className="stat">
-                  ⚠️ 부족 <strong>{low.length}</strong>개
-                </span>
+                <span className="stat">✓ 여유 <strong>{safe}</strong>개</span>
+                <span className="stat">⚠️ 부족 <strong>{low.length}</strong>개</span>
               </div>
             </div>
 
-            {/* 3. 카테고리 그리드 */}
             <div className="section-title">카테고리</div>
             <div className="category-grid">
               {visibleCategories.map((cat) => {
                 const c = counts[cat]
                 const hasLow = c.low > 0
                 return (
-                  <button
-                    key={cat}
-                    type="button"
+                  <button key={cat} type="button"
                     className={`category-grid-card ${hasLow ? 'has-low' : ''}`}
-                    onClick={() => nav(`/category/${encodeURIComponent(cat)}`)}
-                  >
-                    <div className="icon">{CAT_ICON[cat]}</div>
+                    onClick={() => nav(`/category/${encodeURIComponent(cat)}`)}>
+                    <div className="icon">{getIcon(cat)}</div>
                     <div className="name">{cat}</div>
-                    <div className="total">
-                      {c.total}<span className="unit">개</span>
-                    </div>
-                    <div className="breakdown">
-                      여유 {c.total - c.low} · 부족 {c.low}
-                    </div>
+                    <div className="total">{c.total}<span className="unit">개</span></div>
+                    <div className="breakdown">여유 {c.total - c.low} · 부족 {c.low}</div>
                   </button>
                 )
               })}
+              <button type="button" className="category-grid-card add-card"
+                onClick={() => setAddCatOpen(true)}>
+                <div className="icon">＋</div>
+                <div className="name">추가</div>
+              </button>
             </div>
           </>
         )}
       </div>
+
+      <AddCategoryModal open={addCatOpen} onClose={() => setAddCatOpen(false)} onSave={onAddCat} />
     </div>
   )
 }

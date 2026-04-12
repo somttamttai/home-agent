@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx'
+import { CategoriesProvider } from './hooks/useCategories.jsx'
 import Home from './pages/Home.jsx'
 import Scan from './pages/Scan.jsx'
 import Receipt from './pages/Receipt.jsx'
@@ -34,6 +35,7 @@ function AppRoutes() {
   if (!household.onboarded) return <Onboarding />
 
   return (
+    <CategoriesProvider>
     <div className="app-shell">
       <Sidebar />
       <div className="app">
@@ -50,6 +52,7 @@ function AppRoutes() {
         <TabBar />
       </div>
     </div>
+    </CategoriesProvider>
   )
 }
 
