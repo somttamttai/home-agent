@@ -1,5 +1,5 @@
 // Vercel Serverless Function — /api/family
-import { authenticateRequest, supabaseWithToken, Unauthorized, Forbidden } from './_lib/auth.js';
+import { authenticateRequest, supabaseAdmin, Unauthorized, Forbidden } from './_lib/auth.js';
 import { BadRequest, NotFound } from './_lib/logic.js';
 import { parseUrl, readBody, sendJson, sendError, handlePreflight } from './_lib/respond.js';
 
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
 
   try {
-    const { user, token, householdId } = await authenticateRequest(req);
+    const { user, householdId } = await authenticateRequest(req);
     if (!householdId) throw new BadRequest('소속된 집이 없습니다');
 
     const { path } = parseUrl(req);
@@ -15,8 +15,7 @@ export default async function handler(req, res) {
 
     // GET /api/family
     if (path === '/api/family' && method === 'GET') {
-      const rows = await supabaseWithToken(
-        token,
+      const rows = await supabaseAdmin(
         `family_settings?household_id=eq.${householdId}`
       );
       if (!rows || rows.length === 0) {
@@ -35,21 +34,19 @@ export default async function handler(req, res) {
         updated_at: new Date().toISOString(),
       };
 
-      const existing = await supabaseWithToken(
-        token,
+      const existing = await supabaseAdmin(
         `family_settings?household_id=eq.${householdId}`
       );
 
       if (existing && existing.length > 0) {
-        const updated = await supabaseWithToken(
-          token,
+        const updated = await supabaseAdmin(
           `family_settings?household_id=eq.${householdId}`,
           { method: 'PATCH', body: JSON.stringify(patch) }
         );
         return sendJson(res, updated[0]);
       }
 
-      const created = await supabaseWithToken(token, 'family_settings', {
+      const created = await supabaseAdmin('family_settings', {
         method: 'POST',
         body: JSON.stringify({ household_id: householdId, ...patch }),
       });

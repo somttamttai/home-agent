@@ -1,8 +1,10 @@
 // JWT 인증 미들웨어 — Supabase Auth 토큰 검증
-// Authorization: Bearer <jwt> 헤더에서 사용자 정보 추출
+// 서버 사이드: service_role 키로 RLS 우회 (앱 레벨에서 인가 처리)
+// 클라이언트 인증: Authorization 헤더의 JWT로 사용자 확인
 
 const SUPABASE_URL = () => process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = () => process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 export class Unauthorized extends Error {
   constructor(message = '인증이 필요합니다') {
@@ -40,14 +42,15 @@ export async function authenticateUser(req) {
   return user;
 }
 
-// 사용자 JWT 토큰으로 Supabase REST 호출 (RLS가 auth.uid() 인식)
-export async function supabaseWithToken(token, path, options = {}) {
+// service_role 키로 Supabase REST 호출 (RLS 우회)
+export async function supabaseAdmin(path, options = {}) {
+  const key = SUPABASE_SERVICE_KEY();
   const url = `${SUPABASE_URL()}/rest/v1/${path}`;
   const r = await fetch(url, {
     ...options,
     headers: {
-      apikey: SUPABASE_ANON_KEY(),
-      Authorization: `Bearer ${token}`,
+      apikey: key,
+      Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
       ...(options.headers || {}),
@@ -62,19 +65,17 @@ export async function supabaseWithToken(token, path, options = {}) {
   return null;
 }
 
-export async function getHouseholdId(token, userId) {
-  const rows = await supabaseWithToken(
-    token,
+export async function getHouseholdId(userId) {
+  const rows = await supabaseAdmin(
     `household_members?user_id=eq.${userId}&limit=1`
   );
   return rows && rows.length > 0 ? rows[0].household_id : null;
 }
 
 export async function authenticateRequest(req) {
-  const token = extractToken(req);
   const user = await authenticateUser(req);
-  const householdId = await getHouseholdId(token, user.id);
-  return { user, token, householdId };
+  const householdId = await getHouseholdId(user.id);
+  return { user, householdId };
 }
 
 function generateInviteCode() {

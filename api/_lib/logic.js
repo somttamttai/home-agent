@@ -1,6 +1,6 @@
 // 프레임워크 무관 비즈니스 로직.
 // api/*.js (Vercel Node.js Serverless Function) 에서 공유.
-// token 파라미터: 사용자 JWT (RLS에서 auth.uid() 인식용)
+// service_role 키로 RLS 우회, 앱 레벨에서 household_id 필터링.
 
 import * as naver from './naver.js';
 import * as ocr from './ocr.js';
@@ -53,14 +53,14 @@ function annotateStock(c) {
 }
 
 // ── consumables ────────────────────────────────────────────────────────
-export async function listConsumables(householdId = null, token = null) {
+export async function listConsumables(householdId = null) {
   const params = { order: 'id.asc' };
   if (householdId) params.household_id = `eq.${householdId}`;
-  const rows = await supabase.select('consumables', params, token);
+  const rows = await supabase.select('consumables', params);
   return rows.map(annotateStock);
 }
 
-export async function createConsumable(body, token = null) {
+export async function createConsumable(body) {
   if (!body || !body.name) throw new BadRequest('name is required');
   const clean = {};
   for (const [k, v] of Object.entries(body)) {
@@ -68,17 +68,17 @@ export async function createConsumable(body, token = null) {
       clean[k] = v;
     }
   }
-  const row = await supabase.insert('consumables', clean, token);
+  const row = await supabase.insert('consumables', clean);
   return annotateStock(row);
 }
 
-export async function getConsumable(cid, token = null) {
-  const row = await supabase.getById('consumables', cid, token);
+export async function getConsumable(cid) {
+  const row = await supabase.getById('consumables', cid);
   if (!row) throw new NotFound('consumable not found');
   return annotateStock(row);
 }
 
-export async function updateConsumable(cid, body, token = null) {
+export async function updateConsumable(cid, body) {
   const patch = {};
   for (const [k, v] of Object.entries(body || {})) {
     if (!UPDATE_FIELDS.has(k)) continue;
@@ -89,20 +89,20 @@ export async function updateConsumable(cid, body, token = null) {
   if (Object.keys(patch).length === 0) {
     throw new BadRequest('no updatable fields');
   }
-  const rows = await supabase.update('consumables', { id: cid }, patch, token);
+  const rows = await supabase.update('consumables', { id: cid }, patch);
   if (!rows || rows.length === 0) throw new NotFound('consumable not found');
   return annotateStock(rows[0]);
 }
 
-export async function deleteConsumable(cid, token = null) {
-  await supabase.del('consumables', { id: cid }, token);
+export async function deleteConsumable(cid) {
+  await supabase.del('consumables', { id: cid });
   return { ok: true };
 }
 
-export async function lowStockAlerts(householdId = null, token = null) {
+export async function lowStockAlerts(householdId = null) {
   const params = {};
   if (householdId) params.household_id = `eq.${householdId}`;
-  const rows = await supabase.select('consumables', params, token);
+  const rows = await supabase.select('consumables', params);
   return rows.map(annotateStock).filter((r) => r.need_reorder);
 }
 
@@ -140,19 +140,19 @@ export async function comparePrices(query, ply = null) {
   };
 }
 
-export async function priceHistory(cid, limit = 50, token = null) {
-  const consumable = await supabase.getById('consumables', cid, token);
+export async function priceHistory(cid, limit = 50) {
+  const consumable = await supabase.getById('consumables', cid);
   if (!consumable) throw new NotFound('consumable not found');
   const rows = await supabase.select('price_history', {
     consumable_id: `eq.${cid}`,
     order: 'checked_at.desc',
     limit: String(limit),
-  }, token);
+  });
   return { consumable, history: rows };
 }
 
-export async function refreshPrice(cid, token = null) {
-  const consumable = await supabase.getById('consumables', cid, token);
+export async function refreshPrice(cid) {
+  const consumable = await supabase.getById('consumables', cid);
   if (!consumable) throw new NotFound('consumable not found');
 
   let ply = null;
@@ -180,7 +180,7 @@ export async function refreshPrice(cid, token = null) {
     },
   };
   if (consumable.household_id) phRow.household_id = consumable.household_id;
-  const saved = await supabase.insert('price_history', phRow, token);
+  const saved = await supabase.insert('price_history', phRow);
   return { saved, best };
 }
 
@@ -208,7 +208,6 @@ export function parseReceipt() {
   return ocr.parseReceipt();
 }
 
-// ── 쿠팡 주문내역 텍스트 파싱 ──────────────────────────────────────────
 const UNIT_RE = /(\d+(?:\.\d+)?)\s*(kg|ml|mL|g|L|l|롤|m|매|팩|개입|개|겹)(?![a-zA-Z])/gi;
 
 function simpleParseLine(line) {

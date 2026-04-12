@@ -1,16 +1,19 @@
-// Supabase REST API wrapper (anon key).
-// 환경변수: SUPABASE_URL, SUPABASE_ANON_KEY
-// token 파라미터가 있으면 사용자 JWT로 호출 (RLS에서 auth.uid() 인식)
+// Supabase REST API wrapper — service_role 키로 RLS 우회
+// 서버 사이드에서는 앱 레벨 인가 후 service_role 키로 DB 접근
 
 function base() {
   return `${process.env.SUPABASE_URL}/rest/v1`;
 }
 
-function headers(token, extra = {}) {
-  const key = process.env.SUPABASE_ANON_KEY;
+function serviceKey() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+}
+
+function headers(extra = {}) {
+  const key = serviceKey();
   return {
     apikey: key,
-    Authorization: `Bearer ${token || key}`,
+    Authorization: `Bearer ${key}`,
     'Content-Type': 'application/json',
     ...extra,
   };
@@ -31,18 +34,18 @@ async function ensureOk(r, label) {
   }
 }
 
-export async function select(table, params = {}, token = null) {
+export async function select(table, params = {}) {
   const q = qs(params);
   const url = q ? `${base()}/${table}?${q}` : `${base()}/${table}`;
-  const r = await fetch(url, { headers: headers(token) });
+  const r = await fetch(url, { headers: headers() });
   await ensureOk(r, `select ${table}`);
   return r.json();
 }
 
-export async function insert(table, row, token = null) {
+export async function insert(table, row) {
   const r = await fetch(`${base()}/${table}`, {
     method: 'POST',
-    headers: headers(token, { Prefer: 'return=representation' }),
+    headers: headers({ Prefer: 'return=representation' }),
     body: JSON.stringify(row),
   });
   await ensureOk(r, `insert ${table}`);
@@ -50,30 +53,30 @@ export async function insert(table, row, token = null) {
   return arr[0];
 }
 
-export async function update(table, match, patch, token = null) {
+export async function update(table, match, patch) {
   const matchParams = Object.fromEntries(
     Object.entries(match).map(([k, v]) => [k, `eq.${v}`])
   );
   const url = `${base()}/${table}?${qs(matchParams)}`;
   const r = await fetch(url, {
     method: 'PATCH',
-    headers: headers(token, { Prefer: 'return=representation' }),
+    headers: headers({ Prefer: 'return=representation' }),
     body: JSON.stringify(patch),
   });
   await ensureOk(r, `update ${table}`);
   return r.json();
 }
 
-export async function del(table, match, token = null) {
+export async function del(table, match) {
   const matchParams = Object.fromEntries(
     Object.entries(match).map(([k, v]) => [k, `eq.${v}`])
   );
   const url = `${base()}/${table}?${qs(matchParams)}`;
-  const r = await fetch(url, { method: 'DELETE', headers: headers(token) });
+  const r = await fetch(url, { method: 'DELETE', headers: headers() });
   await ensureOk(r, `delete ${table}`);
 }
 
-export async function getById(table, id, token = null) {
-  const rows = await select(table, { id: `eq.${id}`, limit: 1 }, token);
+export async function getById(table, id) {
+  const rows = await select(table, { id: `eq.${id}`, limit: 1 });
   return rows[0] || null;
 }

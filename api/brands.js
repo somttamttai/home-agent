@@ -1,5 +1,5 @@
 // Vercel Serverless Function — /api/brands
-import { authenticateRequest, supabaseWithToken, Unauthorized, Forbidden } from './_lib/auth.js';
+import { authenticateRequest, supabaseAdmin, Unauthorized, Forbidden } from './_lib/auth.js';
 import { BadRequest, NotFound } from './_lib/logic.js';
 import { parseUrl, readBody, sendJson, sendError, handlePreflight } from './_lib/respond.js';
 
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
 
   try {
-    const { user, token, householdId } = await authenticateRequest(req);
+    const { user, householdId } = await authenticateRequest(req);
     if (!householdId) throw new BadRequest('소속된 집이 없습니다');
 
     const { path } = parseUrl(req);
@@ -15,8 +15,7 @@ export default async function handler(req, res) {
 
     // GET /api/brands
     if (path === '/api/brands' && method === 'GET') {
-      const rows = await supabaseWithToken(
-        token,
+      const rows = await supabaseAdmin(
         `brand_preferences?household_id=eq.${householdId}&order=item_name.asc`
       );
       const map = {};
@@ -31,8 +30,7 @@ export default async function handler(req, res) {
       const body = readBody(req);
       const brands = body.brands || {};
 
-      await supabaseWithToken(
-        token,
+      await supabaseAdmin(
         `brand_preferences?household_id=eq.${householdId}`,
         { method: 'DELETE' }
       );
@@ -45,7 +43,7 @@ export default async function handler(req, res) {
           brand: brand.trim(),
           updated_at: new Date().toISOString(),
         }));
-        await supabaseWithToken(token, 'brand_preferences', {
+        await supabaseAdmin('brand_preferences', {
           method: 'POST',
           body: JSON.stringify(rows),
         });
