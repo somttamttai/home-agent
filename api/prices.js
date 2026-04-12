@@ -2,11 +2,13 @@
 import * as logic from './_lib/logic.js';
 import { BadRequest, NotFound } from './_lib/logic.js';
 import { parseUrl, runHandler } from './_lib/respond.js';
+import { extractToken } from './_lib/auth.js';
 
 export default async function handler(req, res) {
   await runHandler(req, res, async () => {
     const { path, query } = parseUrl(req);
     const method = req.method;
+    const token = extractToken(req) || null;
 
     // /api/prices/compare?query=...&ply=...
     if (path === '/api/prices/compare' && method === 'GET') {
@@ -20,7 +22,7 @@ export default async function handler(req, res) {
       const cid = parseInt(path.slice(historyPrefix.length), 10);
       if (Number.isNaN(cid)) throw new BadRequest('invalid id');
       const limit = parseInt(query.limit || '50', 10);
-      return await logic.priceHistory(cid, limit);
+      return await logic.priceHistory(cid, limit, token);
     }
 
     // /api/prices/refresh/{cid}
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
     if (path.startsWith(refreshPrefix) && method === 'POST') {
       const cid = parseInt(path.slice(refreshPrefix.length), 10);
       if (Number.isNaN(cid)) throw new BadRequest('invalid id');
-      return await logic.refreshPrice(cid);
+      return await logic.refreshPrice(cid, token);
     }
 
     throw new NotFound(`no route: ${method} ${path}`);

@@ -1,37 +1,13 @@
 // Vercel Serverless Function — /api/brands
-import { authenticateRequest, Unauthorized, Forbidden } from './_lib/auth.js';
+import { authenticateRequest, supabaseWithToken, Unauthorized, Forbidden } from './_lib/auth.js';
 import { BadRequest, NotFound } from './_lib/logic.js';
 import { parseUrl, readBody, sendJson, sendError, handlePreflight } from './_lib/respond.js';
-
-const SUPABASE_URL = () => process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = () => process.env.SUPABASE_ANON_KEY;
-
-async function supabaseAdmin(path, options = {}) {
-  const url = `${SUPABASE_URL()}/rest/v1/${path}`;
-  const r = await fetch(url, {
-    ...options,
-    headers: {
-      apikey: SUPABASE_ANON_KEY(),
-      Authorization: `Bearer ${SUPABASE_ANON_KEY()}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-      ...(options.headers || {}),
-    },
-  });
-  if (!r.ok) {
-    const text = await r.text().catch(() => '');
-    throw new Error(`supabase ${r.status}: ${text.slice(0, 200)}`);
-  }
-  const ct = r.headers.get('content-type') || '';
-  if (ct.includes('json')) return r.json();
-  return null;
-}
 
 export default async function handler(req, res) {
   if (handlePreflight(req, res)) return;
 
   try {
-    const { user, householdId } = await authenticateRequest(req);
+    const { user, token, householdId } = await authenticateRequest(req);
     if (!householdId) throw new BadRequest('소속된 집이 없습니다');
 
     const { path } = parseUrl(req);
@@ -39,7 +15,8 @@ export default async function handler(req, res) {
 
     // GET /api/brands
     if (path === '/api/brands' && method === 'GET') {
-      const rows = await supabaseAdmin(
+      const rows = await supabaseWithToken(
+        token,
         `brand_preferences?household_id=eq.${householdId}&order=item_name.asc`
       );
       const map = {};
@@ -54,7 +31,8 @@ export default async function handler(req, res) {
       const body = readBody(req);
       const brands = body.brands || {};
 
-      await supabaseAdmin(
+      await supabaseWithToken(
+        token,
         `brand_preferences?household_id=eq.${householdId}`,
         { method: 'DELETE' }
       );
@@ -67,7 +45,7 @@ export default async function handler(req, res) {
           brand: brand.trim(),
           updated_at: new Date().toISOString(),
         }));
-        await supabaseAdmin('brand_preferences', {
+        await supabaseWithToken(token, 'brand_preferences', {
           method: 'POST',
           body: JSON.stringify(rows),
         });

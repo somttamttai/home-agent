@@ -18,9 +18,13 @@ export class Forbidden extends Error {
   }
 }
 
-export async function authenticateUser(req) {
+export function extractToken(req) {
   const authHeader = req.headers['authorization'] || req.headers['Authorization'] || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  return authHeader.replace(/^Bearer\s+/i, '').trim();
+}
+
+export async function authenticateUser(req) {
+  const token = extractToken(req);
   if (!token) throw new Unauthorized();
 
   const r = await fetch(`${SUPABASE_URL()}/auth/v1/user`, {
@@ -36,23 +40,41 @@ export async function authenticateUser(req) {
   return user;
 }
 
-export async function getHouseholdId(userId) {
-  const url = `${SUPABASE_URL()}/rest/v1/household_members?user_id=eq.${userId}&limit=1`;
+// 사용자 JWT 토큰으로 Supabase REST 호출 (RLS가 auth.uid() 인식)
+export async function supabaseWithToken(token, path, options = {}) {
+  const url = `${SUPABASE_URL()}/rest/v1/${path}`;
   const r = await fetch(url, {
+    ...options,
     headers: {
       apikey: SUPABASE_ANON_KEY(),
-      Authorization: `Bearer ${SUPABASE_ANON_KEY()}`,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+      ...(options.headers || {}),
     },
   });
-  if (!r.ok) return null;
-  const rows = await r.json();
-  return rows.length > 0 ? rows[0].household_id : null;
+  if (!r.ok) {
+    const text = await r.text().catch(() => '');
+    throw new Error(`supabase ${r.status}: ${text.slice(0, 300)}`);
+  }
+  const ct = r.headers.get('content-type') || '';
+  if (ct.includes('json')) return r.json();
+  return null;
+}
+
+export async function getHouseholdId(token, userId) {
+  const rows = await supabaseWithToken(
+    token,
+    `household_members?user_id=eq.${userId}&limit=1`
+  );
+  return rows && rows.length > 0 ? rows[0].household_id : null;
 }
 
 export async function authenticateRequest(req) {
+  const token = extractToken(req);
   const user = await authenticateUser(req);
-  const householdId = await getHouseholdId(user.id);
-  return { user, householdId };
+  const householdId = await getHouseholdId(token, user.id);
+  return { user, token, householdId };
 }
 
 function generateInviteCode() {
