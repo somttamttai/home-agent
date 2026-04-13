@@ -89,6 +89,7 @@ export default function Home() {
   const [editCat, setEditCat] = useState(null)
   const [sheetCat, setSheetCat] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteMoveTarget, setDeleteMoveTarget] = useState(null)
   const [urgentExpanded, setUrgentExpanded] = useState(false)
 
   useEffect(() => {
@@ -130,6 +131,10 @@ export default function Home() {
     for (const c of customCategories) {
       if (!withItems.includes(c.key)) withItems.push(c.key)
     }
+    // 기타: catKeys에 없지만 소모품이 있으면 표시 (기존 데이터 호환)
+    if (counts['기타']?.total > 0 && !withItems.includes('기타')) {
+      withItems.push('기타')
+    }
     return withItems
   }, [counts, catKeys, customCategories])
 
@@ -157,13 +162,26 @@ export default function Home() {
     }
   }
 
-  const onDeleteCat = async () => {
+  const sheetCatItemCount = useMemo(() => {
+    if (!sheetCat) return 0
+    return items.filter((i) => (i.category || '기타') === sheetCat).length
+  }, [sheetCat, items])
+
+  const deletableCats = useMemo(() => {
+    if (!sheetCat) return []
+    return categories.filter((c) => c.key !== sheetCat)
+  }, [sheetCat, categories])
+
+  const onDeleteCat = async (moveTo) => {
     if (!sheetCat) return
     try {
-      await deleteCategory(sheetCat)
-      toast(`🗑 "${sheetCat}" 삭제됨`)
+      await deleteCategory(sheetCat, moveTo)
+      toast(moveTo
+        ? `🗑 "${sheetCat}" 삭제됨 → 소모품 "${moveTo}"로 이동`
+        : `🗑 "${sheetCat}" 삭제됨 (소모품 ${sheetCatItemCount}개도 삭제)`)
       setSheetCat(null)
       setConfirmDelete(false)
+      setDeleteMoveTarget(null)
     } catch (e) {
       toast(`❌ ${e.message}`)
     }
@@ -322,7 +340,7 @@ export default function Home() {
         initial={editCat ? { name: editCat, icon: getIcon(editCat) } : null}
       />
 
-      <BottomSheet open={!!sheetCat} onClose={() => { setSheetCat(null); setConfirmDelete(false) }}
+      <BottomSheet open={!!sheetCat} onClose={() => { setSheetCat(null); setConfirmDelete(false); setDeleteMoveTarget(null) }}
         title={sheetCat ? `${getIcon(sheetCat)} ${sheetCat}` : ''}>
         {!confirmDelete ? (
           <>
@@ -339,18 +357,59 @@ export default function Home() {
               <span className="label">카테고리 삭제</span>
             </button>
           </>
-        ) : (
+        ) : deleteMoveTarget === null ? (
           <div className="sheet-confirm">
-            <div className="confirm-title">정말 삭제할까요?</div>
-            <div className="confirm-msg">
-              "{sheetCat}" 카테고리를 삭제합니다.<br />
-              소모품은 "기타"로 이동돼요.
+            <div className="confirm-title">"{sheetCat}" 삭제</div>
+            {sheetCatItemCount > 0 ? (
+              <>
+                <div className="confirm-msg">
+                  소모품 {sheetCatItemCount}개가 있어요. 어떻게 할까요?
+                </div>
+                <div className="confirm-actions" style={{ flexDirection: 'column', gap: 8 }}>
+                  <button type="button" className="btn" style={{ width: '100%' }}
+                    onClick={() => setDeleteMoveTarget('pick')}>
+                    다른 카테고리로 이동
+                  </button>
+                  <button type="button" className="btn danger" style={{ width: '100%' }}
+                    onClick={() => onDeleteCat(null)}>
+                    소모품도 함께 삭제
+                  </button>
+                  <button type="button" className="btn secondary" style={{ width: '100%' }}
+                    onClick={() => { setConfirmDelete(false); setDeleteMoveTarget(null) }}>
+                    취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="confirm-msg">이 카테고리에 소모품이 없어요.</div>
+                <div className="confirm-actions">
+                  <button type="button" className="btn secondary"
+                    onClick={() => { setConfirmDelete(false); setDeleteMoveTarget(null) }}>취소</button>
+                  <button type="button" className="btn danger"
+                    onClick={() => onDeleteCat(null)}>삭제</button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="confirm-title" style={{ padding: '0 16px 8px', fontSize: 15, fontWeight: 700 }}>
+              이동할 카테고리 선택
             </div>
-            <div className="confirm-actions">
-              <button type="button" className="btn secondary"
-                onClick={() => setConfirmDelete(false)}>취소</button>
-              <button type="button" className="btn danger" onClick={onDeleteCat}>삭제</button>
-            </div>
+            {deletableCats.map((c) => (
+              <button key={c.key} type="button" className="sheet-item"
+                onClick={() => onDeleteCat(c.key)}>
+                <span className="icon">{c.icon}</span>
+                <span className="label">{c.key}</span>
+              </button>
+            ))}
+            <div className="sheet-divider" />
+            <button type="button" className="sheet-item"
+              onClick={() => setDeleteMoveTarget(null)}>
+              <span className="icon">←</span>
+              <span className="label">뒤로</span>
+            </button>
           </div>
         )}
       </BottomSheet>

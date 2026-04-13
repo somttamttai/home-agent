@@ -15,7 +15,7 @@ export default function CategoryDetail() {
   const decoded = decodeURIComponent(name || '')
   const nav = useNavigate()
   const toast = useToast()
-  const { getIcon, customCategories, updateCategory, deleteCategory } = useCategories()
+  const { getIcon, categories, customCategories, updateCategory, deleteCategory } = useCategories()
   const icon = getIcon(decoded)
   const isCustom = customCategories.some((c) => c.key === decoded)
 
@@ -33,9 +33,15 @@ export default function CategoryDetail() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteMoveTarget, setDeleteMoveTarget] = useState(null)
   const [editName, setEditName] = useState(decoded)
   const [editIcon, setEditIcon] = useState(icon)
   const [saving, setSaving] = useState(false)
+
+  const deletableCats = useMemo(
+    () => categories.filter((c) => c.key !== decoded),
+    [categories, decoded],
+  )
 
   useEffect(() => { setEditName(decoded); setEditIcon(icon) }, [decoded, icon])
 
@@ -50,10 +56,12 @@ export default function CategoryDetail() {
     setSaving(false)
   }
 
-  const onDeleteConfirm = async () => {
+  const onDeleteConfirm = async (moveTo) => {
     try {
-      await deleteCategory(decoded)
-      toast(`🗑 "${decoded}" 삭제됨 (소모품은 기타로 이동)`)
+      await deleteCategory(decoded, moveTo)
+      toast(moveTo
+        ? `🗑 "${decoded}" 삭제됨 → 소모품 "${moveTo}"로 이동`
+        : `🗑 "${decoded}" 삭제됨 (소모품 ${filtered.length}개도 삭제)`)
       nav('/', { replace: true })
     } catch { toast('❌ 삭제 실패') }
   }
@@ -110,7 +118,7 @@ export default function CategoryDetail() {
       </div>
 
       {/* 카테고리 관리 바텀시트 */}
-      <BottomSheet open={sheetOpen} onClose={() => { setSheetOpen(false); setConfirmDelete(false) }}
+      <BottomSheet open={sheetOpen} onClose={() => { setSheetOpen(false); setConfirmDelete(false); setDeleteMoveTarget(null) }}
         title={`${icon} ${decoded}`}>
         {!confirmDelete ? (
           <>
@@ -127,19 +135,59 @@ export default function CategoryDetail() {
               <span className="label">카테고리 삭제</span>
             </button>
           </>
-        ) : (
+        ) : deleteMoveTarget === null ? (
           <div className="sheet-confirm">
-            <div className="confirm-title">정말 삭제할까요?</div>
-            <div className="confirm-msg">
-              "{decoded}" 카테고리를 삭제합니다.<br />
-              소모품 {filtered.length}개는 "기타"로 이동돼요.
+            <div className="confirm-title">"{decoded}" 삭제</div>
+            {filtered.length > 0 ? (
+              <>
+                <div className="confirm-msg">
+                  소모품 {filtered.length}개가 있어요. 어떻게 할까요?
+                </div>
+                <div className="confirm-actions" style={{ flexDirection: 'column', gap: 8 }}>
+                  <button type="button" className="btn" style={{ width: '100%' }}
+                    onClick={() => setDeleteMoveTarget('pick')}>
+                    다른 카테고리로 이동
+                  </button>
+                  <button type="button" className="btn danger" style={{ width: '100%' }}
+                    onClick={() => onDeleteConfirm(null)}>
+                    소모품도 함께 삭제
+                  </button>
+                  <button type="button" className="btn secondary" style={{ width: '100%' }}
+                    onClick={() => { setConfirmDelete(false); setDeleteMoveTarget(null) }}>
+                    취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="confirm-msg">이 카테고리에 소모품이 없어요.</div>
+                <div className="confirm-actions">
+                  <button type="button" className="btn secondary"
+                    onClick={() => { setConfirmDelete(false); setDeleteMoveTarget(null) }}>취소</button>
+                  <button type="button" className="btn danger"
+                    onClick={() => onDeleteConfirm(null)}>삭제</button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div>
+            <div className="confirm-title" style={{ padding: '0 16px 8px', fontSize: 15, fontWeight: 700 }}>
+              이동할 카테고리 선택
             </div>
-            <div className="confirm-actions">
-              <button type="button" className="btn secondary"
-                onClick={() => setConfirmDelete(false)}>취소</button>
-              <button type="button" className="btn danger"
-                onClick={onDeleteConfirm}>삭제</button>
-            </div>
+            {deletableCats.map((c) => (
+              <button key={c.key} type="button" className="sheet-item"
+                onClick={() => onDeleteConfirm(c.key)}>
+                <span className="icon">{c.icon}</span>
+                <span className="label">{c.key}</span>
+              </button>
+            ))}
+            <div className="sheet-divider" />
+            <button type="button" className="sheet-item"
+              onClick={() => setDeleteMoveTarget(null)}>
+              <span className="icon">←</span>
+              <span className="label">뒤로</span>
+            </button>
           </div>
         )}
       </BottomSheet>

@@ -76,6 +76,7 @@ export default async function handler(req, res) {
       const body = readBody(req);
       const name = (body.name || '').trim();
       if (!name) throw new BadRequest('카테고리 이름이 필요합니다');
+      const moveTo = (body.move_to || '').trim();
 
       const updated = current.filter((c) => c.key !== name);
       await supabaseAdmin(`households?id=eq.${householdId}`, {
@@ -83,10 +84,18 @@ export default async function handler(req, res) {
         body: JSON.stringify({ custom_categories: updated }),
       }, token);
 
-      await supabaseAdmin(`consumables?household_id=eq.${householdId}&category=eq.${encodeURIComponent(name)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ category: '기타' }),
-      }, token);
+      if (moveTo) {
+        // 소모품을 선택한 카테고리로 이동
+        await supabaseAdmin(`consumables?household_id=eq.${householdId}&category=eq.${encodeURIComponent(name)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ category: moveTo }),
+        }, token);
+      } else {
+        // 소모품도 함께 삭제
+        await supabaseAdmin(`consumables?household_id=eq.${householdId}&category=eq.${encodeURIComponent(name)}`, {
+          method: 'DELETE',
+        }, token);
+      }
 
       return sendJson(res, { custom: updated });
     }

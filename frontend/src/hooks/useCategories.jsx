@@ -56,7 +56,7 @@ export function CategoriesProvider({ children }) {
   )
 
   const all = useMemo(
-    () => [...BASE_CATEGORIES, ...autoCategories, { key: '기타', icon: '📦' }, ...custom],
+    () => [...BASE_CATEGORIES, ...autoCategories, ...custom],
     [autoCategories, custom],
   )
 
@@ -116,11 +116,11 @@ export function CategoriesProvider({ children }) {
     setCustom(data.custom || [])
   }, [authHeaders])
 
-  const deleteCategory = useCallback(async (name) => {
+  const deleteCategory = useCallback(async (name, moveTo = null) => {
     const r = await fetch('/api/categories', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, move_to: moveTo || '' }),
     })
     if (!r.ok) {
       const err = await r.json().catch(() => ({}))
