@@ -76,7 +76,7 @@ export function CategoriesProvider({ children }) {
         category: cat.key,
         icon: cat.icon,
         templates: items.map((it) => ({
-          icon: cat.icon,
+          icon: it.icon || cat.icon,
           name: it.name,
           brand: it.brand || '',
           spec: it.spec || '',
