@@ -89,6 +89,7 @@ export default function Home() {
   const [editCat, setEditCat] = useState(null)
   const [sheetCat, setSheetCat] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [urgentExpanded, setUrgentExpanded] = useState(false)
 
   useEffect(() => {
     if (!('Notification' in window)) return
@@ -216,26 +217,52 @@ export default function Home() {
           <>
             {low.length > 0 && (
               <>
-                <div className="section-title" style={{ paddingTop: 0 }}>⚠️ 지금 필요해요</div>
-                <div className="urgent-card">
-                  {low.map((it) => {
-                    const emoji = getIcon(it.category || '기타')
-                    const cls = ddayClass(it.days_left)
-                    return (
-                      <button key={it.id} type="button" className="urgent-row"
-                        onClick={() => onRefresh(it)}>
-                        <span className="emoji">{emoji}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="name">{it.name}</div>
-                          {(it.brand || it.spec) && (
-                            <div className="meta">{[it.brand, it.spec].filter(Boolean).join(' · ')}</div>
-                          )}
-                        </div>
-                        <span className={`dday-badge ${cls}`}>{formatDday(it.days_left)}</span>
-                      </button>
-                    )
-                  })}
+                <div className="section-title urgent-section-title" style={{ paddingTop: 0 }}>
+                  <span>⚠️ 지금 필요해요</span>
+                  <span className="urgent-count">{low.length}개</span>
                 </div>
+                {!urgentExpanded ? (
+                  <div className="urgent-chips-scroll">
+                    {low.slice(0, 3).map((it) => {
+                      const cls = ddayClass(it.days_left)
+                      const catName = it.category || '기타'
+                      return (
+                        <button key={it.id} type="button" className={`urgent-chip ${cls}`}
+                          onClick={() => onRefresh(it)}>
+                          <div className="urgent-chip-name">{it.name}</div>
+                          <div className="urgent-chip-dday">{formatDday(it.days_left)}</div>
+                          <div className="urgent-chip-cat">{getIcon(catName)} {catName}</div>
+                        </button>
+                      )
+                    })}
+                    {low.length > 3 && (
+                      <button type="button" className="urgent-chip more"
+                        onClick={() => setUrgentExpanded(true)}>
+                        <div className="urgent-chip-dday">+{low.length - 3}</div>
+                        <div className="urgent-chip-name">더보기</div>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="urgent-chips-expanded">
+                    {low.map((it) => {
+                      const cls = ddayClass(it.days_left)
+                      const catName = it.category || '기타'
+                      return (
+                        <button key={it.id} type="button" className={`urgent-chip ${cls}`}
+                          onClick={() => onRefresh(it)}>
+                          <div className="urgent-chip-name">{it.name}</div>
+                          <div className="urgent-chip-dday">{formatDday(it.days_left)}</div>
+                          <div className="urgent-chip-cat">{getIcon(catName)} {catName}</div>
+                        </button>
+                      )
+                    })}
+                    <button type="button" className="urgent-chip more"
+                      onClick={() => setUrgentExpanded(false)}>
+                      <div className="urgent-chip-name">접기</div>
+                    </button>
+                  </div>
+                )}
               </>
             )}
 

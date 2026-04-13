@@ -803,58 +803,126 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 }
 
 /* ── Urgent section (홈 - 지금 필요해요) ─────────────────── */
-.urgent-card {
-  background: var(--danger-bg);
-  border: 1.5px solid var(--danger);
-  border-radius: var(--radius);
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 12px;
-}
-.urgent-row {
+.urgent-section-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+}
+.urgent-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.urgent-chips-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.urgent-chips-scroll::-webkit-scrollbar { display: none; }
+
+.urgent-chips-expanded {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.urgent-chip {
+  min-width: 100px;
   padding: 12px 14px;
-  border-radius: 12px;
-  background: transparent;
-  border: none;
-  width: 100%;
-  text-align: left;
+  border-radius: 14px;
+  border: 1.5px solid;
+  background: none;
   font-family: inherit;
-  color: var(--text);
-  transition: background 0.15s, transform 0.1s;
-}
-.urgent-row:active {
-  background: rgba(255, 59, 48, 0.08);
-  transform: scale(0.98);
-}
-.urgent-row + .urgent-row {
-  border-top: 1px solid rgba(255, 59, 48, 0.18);
-}
-.urgent-row .emoji {
-  font-size: 24px;
+  text-align: left;
   flex-shrink: 0;
+  transition: transform 0.1s;
+  cursor: pointer;
 }
-.urgent-row .name {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.urgent-chip:active { transform: scale(0.96); }
+
+.urgent-chip.urgent {
+  background: #FFF5F5;
+  border-color: #FECACA;
 }
-.urgent-row .meta {
-  font-size: 11px;
+.urgent-chip.urgent .urgent-chip-name { color: #991B1B; }
+.urgent-chip.urgent .urgent-chip-dday { color: #EF4444; }
+.urgent-chip.urgent .urgent-chip-cat  { color: #991B1B; }
+
+.urgent-chip.warning {
+  background: #FFFBF5;
+  border-color: #FED7AA;
+}
+.urgent-chip.warning .urgent-chip-name { color: #92400E; }
+.urgent-chip.warning .urgent-chip-dday { color: #F97316; }
+.urgent-chip.warning .urgent-chip-cat  { color: #92400E; }
+
+.urgent-chip.safe {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+.urgent-chip.safe .urgent-chip-name { color: var(--text); }
+.urgent-chip.safe .urgent-chip-dday { color: var(--primary); }
+.urgent-chip.safe .urgent-chip-cat  { color: var(--text-sub); }
+
+.urgent-chip.more {
+  background: var(--card);
+  border-color: var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+}
+.urgent-chip.more .urgent-chip-dday {
   color: var(--text-sub);
+  font-size: 18px;
+}
+.urgent-chip.more .urgent-chip-name {
+  color: var(--text-sub);
+  font-size: 12px;
+}
+
+.urgent-chip-name {
+  font-size: 13px;
   font-weight: 500;
-  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 120px;
 }
+.urgent-chip-dday {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 4px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+.urgent-chip-cat {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* dark mode overrides */
+[data-theme="dark"] .urgent-chip.urgent {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+[data-theme="dark"] .urgent-chip.urgent .urgent-chip-name { color: #FCA5A5; }
+[data-theme="dark"] .urgent-chip.urgent .urgent-chip-dday { color: #F87171; }
+[data-theme="dark"] .urgent-chip.urgent .urgent-chip-cat  { color: #FCA5A5; }
+
+[data-theme="dark"] .urgent-chip.warning {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+[data-theme="dark"] .urgent-chip.warning .urgent-chip-name { color: #FDBA74; }
+[data-theme="dark"] .urgent-chip.warning .urgent-chip-dday { color: #FB923C; }
+[data-theme="dark"] .urgent-chip.warning .urgent-chip-cat  { color: #FDBA74; }
 
 /* ── D-day badge ──────────────────────────────────────────── */
 .dday-badge {

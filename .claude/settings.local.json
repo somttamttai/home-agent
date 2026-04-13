@@ -22,7 +22,13 @@
       "Bash(curl -sI http://localhost:4173/)",
       "Bash(curl -s http://localhost:4173/)",
       "Bash(curl -s http://localhost:4173/assets/index-CKvHdHpM.css)",
-      "Bash(curl -s http://localhost:4173/assets/index-CEHJwHgr.js)"
+      "Bash(curl -s http://localhost:4173/assets/index-CEHJwHgr.js)",
+      "Bash(npm run:*)",
+      "Bash(ls:*)",
+      "Bash(wc -l \"/c/Users/박상민/home-agent/frontend/src/pages\"/*)",
+      "Bash(xargs wc:*)",
+      "Bash(wc -l \"/c/Users/박상민/home-agent/frontend/src/components\"/*)",
+      "Bash(wc -l \"/c/Users/박상민/home-agent/frontend/src/hooks\"/* \"/c/Users/박상민/home-agent/frontend/src/utils\"/*)"
     ]
   }
 }
