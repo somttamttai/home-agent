@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader.jsx'
 import StockCard from '../components/StockCard.jsx'
 import Modal from '../components/Modal.jsx'
 import BottomSheet from '../components/BottomSheet.jsx'
-import { useConsumables } from '../hooks/useConsumables.js'
+import { useConsumables } from '../hooks/useConsumables.jsx'
 import { useCategories } from '../hooks/useCategories.jsx'
 import { useToast } from '../components/Toast.jsx'
 

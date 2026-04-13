@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../components/Toast.jsx'
 import { useAuth } from './useAuth.jsx'
 import { useRealtime } from './useRealtime.js'
 
-export function useConsumables() {
+const ConsumablesContext = createContext(null)
+
+export function ConsumablesProvider({ children }) {
   const nav = useNavigate()
   const toast = useToast()
   const { authHeaders, householdId } = useAuth()
@@ -118,7 +120,7 @@ export function useConsumables() {
     nav(`/compare?${params}`)
   }, [nav, getPreferredBrand])
 
-  return {
+  const value = {
     items,
     loading,
     error,
@@ -131,4 +133,16 @@ export function useConsumables() {
     getPreferredBrand,
     reloadBrands: loadBrands,
   }
+
+  return (
+    <ConsumablesContext.Provider value={value}>
+      {children}
+    </ConsumablesContext.Provider>
+  )
+}
+
+export function useConsumables() {
+  const ctx = useContext(ConsumablesContext)
+  if (!ctx) throw new Error('useConsumables must be used within ConsumablesProvider')
+  return ctx
 }

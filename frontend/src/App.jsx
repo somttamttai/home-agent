@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx'
 import { CategoriesProvider } from './hooks/useCategories.jsx'
+import { ConsumablesProvider } from './hooks/useConsumables.jsx'
 import Home from './pages/Home.jsx'
 import Scan from './pages/Scan.jsx'
 import Receipt from './pages/Receipt.jsx'
@@ -35,19 +36,21 @@ function AppRoutes() {
 
   return (
     <CategoriesProvider>
-      <div className="app">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/scan" element={<Scan />} />
-          <Route path="/add" element={<Add />} />
-          <Route path="/compare" element={<PriceCompare />} />
-          <Route path="/receipt" element={<Receipt />} />
-          <Route path="/category/:name" element={<CategoryDetail />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/invite" element={<InviteCode />} />
-        </Routes>
-        <TabBar />
-      </div>
+      <ConsumablesProvider>
+        <div className="app">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/scan" element={<Scan />} />
+            <Route path="/add" element={<Add />} />
+            <Route path="/compare" element={<PriceCompare />} />
+            <Route path="/receipt" element={<Receipt />} />
+            <Route path="/category/:name" element={<CategoryDetail />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/invite" element={<InviteCode />} />
+          </Routes>
+          <TabBar />
+        </div>
+      </ConsumablesProvider>
     </CategoriesProvider>
   )
 }

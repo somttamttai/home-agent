@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme.js'
-import { useConsumables } from '../hooks/useConsumables.js'
+import { useConsumables } from '../hooks/useConsumables.jsx'
 import { useCategories } from '../hooks/useCategories.jsx'
 import Modal from '../components/Modal.jsx'
 import BottomSheet from '../components/BottomSheet.jsx'
