@@ -11,7 +11,7 @@ import { useCategories } from '../hooks/useCategories.jsx'
 // ───────────────────────────────────────────────────────────────────────
 // 메인 카드
 // ───────────────────────────────────────────────────────────────────────
-export default function StockCard({ item, onRefresh, onStockChange, onUpdate, onDelete }) {
+export default function StockCard({ item, onRefresh, onStockChange, onUpdate, onDelete, onBrandSaved }) {
   const {
     name, brand, spec, current_stock, max_stock,
     daily_usage, days_left, reorder_point, need_reorder,
@@ -199,6 +199,7 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
         open={activeModal === 'brand'}
         item={item}
         onClose={closeModal}
+        onBrandSaved={onBrandSaved}
       />
 
       {/* 소비 속도 모달 */}
@@ -353,7 +354,7 @@ function initInfo(item) {
 // ───────────────────────────────────────────────────────────────────────
 // 선호 브랜드 모달
 // ───────────────────────────────────────────────────────────────────────
-function BrandModal({ open, item, onClose }) {
+function BrandModal({ open, item, onClose, onBrandSaved }) {
   const toast = useToast()
   const { authHeaders } = useAuth()
   const [brand, setBrand] = useState('')
@@ -386,6 +387,7 @@ function BrandModal({ open, item, onClose }) {
         body: JSON.stringify({ brands: map }),
       })
       toast(v ? `✅ "${v}" 브랜드로 저장됨` : '🗑 선호 브랜드 삭제됨')
+      onBrandSaved?.()
       onClose()
     } catch {
       toast('❌ 저장 실패')
@@ -431,17 +433,7 @@ function BrandModal({ open, item, onClose }) {
 // ───────────────────────────────────────────────────────────────────────
 function ConsumptionModal({ open, item, onClose, onUpdate }) {
   const toast = useToast()
-  const { authHeaders } = useAuth()
-  const [family, setFamily] = useState({ adults: 2, children: 0 })
-
-  useEffect(() => {
-    if (open) {
-      fetch('/api/family', { headers: authHeaders() })
-        .then((r) => r.json())
-        .then((data) => setFamily({ adults: data.adults ?? 2, children: data.children ?? 0 }))
-        .catch(() => {})
-    }
-  }, [open, authHeaders])
+  const { family } = useCategories()
   const people = effectivePeople(family)
 
   const [form, setForm] = useState(() => initConsumption(item))

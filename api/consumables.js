@@ -9,20 +9,14 @@ export default async function handler(req, res) {
     const { path } = parseUrl(req);
     const method = req.method;
 
-    let householdId = null;
-    try {
-      const auth = await authenticateRequest(req);
-      householdId = auth.householdId;
-    } catch {
-      // 인증 없이도 동작 (하위 호환)
-    }
+    const { householdId } = await authenticateRequest(req);
 
     // /api/consumables
     if (path === '/api/consumables') {
       if (method === 'GET') return await logic.listConsumables(householdId);
       if (method === 'POST') {
         const body = readBody(req);
-        if (householdId) body.household_id = householdId;
+        body.household_id = householdId;
         return await logic.createConsumable(body);
       }
     }

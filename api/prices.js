@@ -10,7 +10,8 @@ export default async function handler(req, res) {
 
     // /api/prices/compare?query=...&ply=...
     if (path === '/api/prices/compare' && method === 'GET') {
-      const ply = query.ply ? parseInt(query.ply, 10) : null;
+      const plyRaw = query.ply ? parseInt(query.ply, 10) : null;
+      const ply = (plyRaw != null && !Number.isNaN(plyRaw) && plyRaw > 0) ? plyRaw : null;
       return await logic.comparePrices(query.query, ply);
     }
 
@@ -19,7 +20,8 @@ export default async function handler(req, res) {
     if (path.startsWith(historyPrefix) && method === 'GET') {
       const cid = parseInt(path.slice(historyPrefix.length), 10);
       if (Number.isNaN(cid)) throw new BadRequest('invalid id');
-      const limit = parseInt(query.limit || '50', 10);
+      const limitRaw = parseInt(query.limit || '50', 10);
+      const limit = (!Number.isNaN(limitRaw) && limitRaw > 0) ? Math.min(limitRaw, 200) : 50;
       return await logic.priceHistory(cid, limit);
     }
 

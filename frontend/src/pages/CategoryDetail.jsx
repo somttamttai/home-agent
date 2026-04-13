@@ -15,13 +15,13 @@ export default function CategoryDetail() {
   const decoded = decodeURIComponent(name || '')
   const nav = useNavigate()
   const toast = useToast()
-  const { getIcon, customCategories, defaultCategories, updateCategory, deleteCategory } = useCategories()
+  const { getIcon, customCategories, updateCategory, deleteCategory } = useCategories()
   const icon = getIcon(decoded)
   const isCustom = customCategories.some((c) => c.key === decoded)
 
   const {
     items, loading, error, reload,
-    onStockChange, onUpdate, onDelete, onRefresh,
+    onStockChange, onUpdate, onDelete, onRefresh, reloadBrands,
   } = useConsumables()
 
   const filtered = useMemo(
@@ -101,7 +101,8 @@ export default function CategoryDetail() {
               {filtered.map((it) => (
                 <StockCard key={it.id} item={it}
                   onRefresh={onRefresh} onStockChange={onStockChange}
-                  onUpdate={onUpdate} onDelete={onDelete} />
+                  onUpdate={onUpdate} onDelete={onDelete}
+                  onBrandSaved={reloadBrands} />
               ))}
             </div>
           </>

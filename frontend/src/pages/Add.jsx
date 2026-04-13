@@ -7,114 +7,6 @@ import { useCategories } from '../hooks/useCategories.jsx'
 import { calcDailyUsage, expectedDays, getBaselineDays } from '../utils/consumption.js'
 import { effectivePeople, formatPeople } from '../utils/family.js'
 
-// 이전 호환용 — 실제 사용은 useCategories().templateGroups
-const LEGACY_TEMPLATE_GROUPS = [
-  {
-    category: '욕실',
-    icon: '🛁',
-    templates: [
-      { icon: '🧻', name: '화장지',     brand: '유한킴벌리', spec: '3겹 30롤', daily_usage: 0.03, reorder_point: 7  },
-      { icon: '🚿', name: '샴푸',       brand: '팬틴',       spec: '400ml',    daily_usage: 0.05, reorder_point: 5  },
-      { icon: '🧴', name: '린스',       brand: '팬틴',       spec: '400ml',    daily_usage: 0.03, reorder_point: 7  },
-      { icon: '🧼', name: '바디워시',   brand: '다우니',     spec: '500ml',    daily_usage: 0.05, reorder_point: 5  },
-      { icon: '🪥', name: '치약',       brand: '2080',       spec: '120g',     daily_usage: 0.03, reorder_point: 5  },
-      { icon: '🪥', name: '칫솔',       brand: '오랄비',     spec: '1개',      daily_usage: 0.01, reorder_point: 30 },
-      { icon: '🪒', name: '면도기',     brand: '질레트',     spec: '1개',      daily_usage: 0.01, reorder_point: 30 },
-      { icon: '🧽', name: '욕실세제',   brand: '홈스타',     spec: '500ml',    daily_usage: 0.02, reorder_point: 14 },
-      { icon: '🚽', name: '변기세정제', brand: '후레쉬',     spec: '1개',      daily_usage: 0.01, reorder_point: 30 },
-    ],
-  },
-  {
-    category: '주방',
-    icon: '🍳',
-    templates: [
-      { icon: '🍽️', name: '주방세제',       brand: '트리오',  spec: '500ml',  daily_usage: 0.02, reorder_point: 7  },
-      { icon: '🧽',  name: '수세미',         brand: '기타',    spec: '1개',    daily_usage: 0.03, reorder_point: 14 },
-      { icon: '🧻',  name: '키친타올',       brand: '스카트',  spec: '150매',  daily_usage: 0.05, reorder_point: 7  },
-      { icon: '📦',  name: '랩',             brand: '기타',    spec: '1개',    daily_usage: 0.01, reorder_point: 30 },
-      { icon: '🛍️', name: '지퍼백',         brand: '기타',    spec: '50매',   daily_usage: 0.05, reorder_point: 14 },
-      { icon: '🥫',  name: '알루미늄호일',   brand: '기타',    spec: '1개',    daily_usage: 0.01, reorder_point: 30 },
-      { icon: '✨',  name: '식기세척기세제', brand: '피니쉬',  spec: '1kg',    daily_usage: 0.02, reorder_point: 14 },
-    ],
-  },
-  {
-    category: '세탁실',
-    icon: '🧺',
-    templates: [
-      { icon: '🧴', name: '세탁세제',   brand: '피죤',     spec: '3kg',  daily_usage: 0.03, reorder_point: 7  },
-      { icon: '💧', name: '섬유유연제', brand: '다우니',   spec: '2L',   daily_usage: 0.03, reorder_point: 7  },
-      { icon: '⚪', name: '표백제',     brand: '옥시크린', spec: '1kg',  daily_usage: 0.01, reorder_point: 30 },
-      { icon: '🍃', name: '드라이시트', brand: '다우니',   spec: '80매', daily_usage: 0.1,  reorder_point: 7  },
-    ],
-  },
-  {
-    category: '청소',
-    icon: '🧹',
-    templates: [
-      { icon: '🗑️', name: '쓰레기봉투', brand: '기타',     spec: '20L 50매', daily_usage: 0.2,  reorder_point: 7  },
-      { icon: '🧽',  name: '청소포',     brand: '기타',     spec: '30매',     daily_usage: 0.1,  reorder_point: 7  },
-      { icon: '🧴',  name: '락스',       brand: '유한락스', spec: '1L',       daily_usage: 0.02, reorder_point: 14 },
-      { icon: '🪶',  name: '먼지떨이',   brand: '기타',     spec: '1개',      daily_usage: 0.01, reorder_point: 60 },
-      { icon: '🧤',  name: '고무장갑',   brand: '기타',     spec: '1켤레',    daily_usage: 0.01, reorder_point: 30 },
-    ],
-  },
-  {
-    category: '침실',
-    icon: '🛏',
-    templates: [
-      { icon: '🌸', name: '방향제',     brand: '페브리즈', spec: '1개',   daily_usage: 0.01, reorder_point: 30 },
-      { icon: '👕', name: '섬유탈취제', brand: '페브리즈', spec: '300ml', daily_usage: 0.02, reorder_point: 14 },
-      { icon: '🦟', name: '모기향',     brand: '기타',     spec: '1개',   daily_usage: 0.01, reorder_point: 30 },
-    ],
-  },
-  {
-    category: '드레스룸',
-    icon: '👔',
-    templates: [
-      { icon: '🛡️', name: '방충제', brand: '기타', spec: '1개',  daily_usage: 0.01, reorder_point: 60 },
-      { icon: '👔',  name: '옷걸이', brand: '기타', spec: '10개', daily_usage: 0.01, reorder_point: 90 },
-    ],
-  },
-  {
-    category: '건강',
-    icon: '💊',
-    templates: [
-      { icon: '🩹', name: '밴드',     brand: '', spec: '20매',  daily_usage: 0.01, reorder_point: 30 },
-      { icon: '😷', name: '마스크',   brand: '', spec: '50매',  daily_usage: 0.03, reorder_point: 7  },
-      { icon: '🧴', name: '손소독제', brand: '', spec: '500ml', daily_usage: 0.03, reorder_point: 7  },
-      { icon: '🩹', name: '소독솜',   brand: '', spec: '40매',  daily_usage: 0.02, reorder_point: 14 },
-    ],
-  },
-  {
-    category: '반려동물',
-    icon: '🐾',
-    templates: [
-      { icon: '🐾', name: '펫패드',       brand: '', spec: '50매',  daily_usage: 1.0,  reorder_point: 3  },
-      { icon: '🍖', name: '사료',         brand: '', spec: '2kg',   daily_usage: 1.0,  reorder_point: 5  },
-      { icon: '🦴', name: '간식',         brand: '', spec: '1봉',   daily_usage: 0.3,  reorder_point: 7  },
-      { icon: '🧴', name: '반려동물샴푸', brand: '', spec: '500ml', daily_usage: 0.03, reorder_point: 30 },
-      { icon: '🗑️', name: '배변봉투',    brand: '', spec: '100매', daily_usage: 0.5,  reorder_point: 5  },
-      { icon: '🪣', name: '모래/펫시트',  brand: '', spec: '1봉',   daily_usage: 0.1,  reorder_point: 14 },
-      { icon: '💊', name: '구충제',       brand: '', spec: '1개',   daily_usage: 0.01, reorder_point: 90 },
-      { icon: '🪥', name: '칫솔(펫용)',   brand: '', spec: '1개',   daily_usage: 0.03, reorder_point: 30 },
-    ],
-  },
-  {
-    category: '유아용품',
-    icon: '🍼',
-    templates: [
-      { icon: '🧒', name: '기저귀',       brand: '', spec: '1팩',     daily_usage: 0.14, reorder_point: 3  },
-      { icon: '🧻', name: '아기물티슈',   brand: '', spec: '80매',    daily_usage: 0.2,  reorder_point: 3  },
-      { icon: '🗑️', name: '기저귀봉투',  brand: '', spec: '200매',   daily_usage: 0.07, reorder_point: 5  },
-      { icon: '🍼', name: '분유',         brand: '', spec: '800g',    daily_usage: 0.07, reorder_point: 5  },
-      { icon: '🧴', name: '젖병세정제',   brand: '', spec: '500ml',   daily_usage: 0.03, reorder_point: 7  },
-      { icon: '🧴', name: '아기샴푸',     brand: '', spec: '350ml',   daily_usage: 0.03, reorder_point: 7  },
-      { icon: '🧴', name: '아기로션',     brand: '', spec: '300ml',   daily_usage: 0.05, reorder_point: 5  },
-      { icon: '🧴', name: '아기바디워시', brand: '', spec: '350ml',   daily_usage: 0.03, reorder_point: 7  },
-      { icon: '🧴', name: '아기세탁세제', brand: '', spec: '1.5L',    daily_usage: 0.03, reorder_point: 7  },
-    ],
-  },
-]
 
 const FIELDS = [
   { key: 'name',          label: '상품명',           type: 'text',   required: true,  placeholder: '예: 크리넥스 화장지' },
@@ -464,7 +356,7 @@ function PasteForm({ onSaved }) {
                 fontSize: 15, fontWeight: 600, color: 'var(--text)',
               }}
             >
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {categoryKeys.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 

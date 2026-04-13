@@ -12,7 +12,7 @@ function getKey() {
 function headers(extra = {}) {
   const key = getKey();
   return {
-    apikey: process.env.SUPABASE_ANON_KEY,
+    apikey: key,
     Authorization: `Bearer ${key}`,
     'Content-Type': 'application/json',
     ...extra,
@@ -50,6 +50,9 @@ export async function insert(table, row) {
   });
   await ensureOk(r, `insert ${table}`);
   const arr = await r.json();
+  if (!arr || arr.length === 0) {
+    throw new Error(`supabase insert ${table}: empty response`);
+  }
   return arr[0];
 }
 

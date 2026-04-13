@@ -129,5 +129,6 @@ export function useConsumables() {
     onRefresh,
     brands,
     getPreferredBrand,
+    reloadBrands: loadBrands,
   }
 }

@@ -146,6 +146,7 @@ export async function comparePrices(query, ply = null) {
     sorted_by: 'total',
     cheapest: byTotal[0] || null,
     items: byTotal.slice(0, 20),
+    unit_price_unavailable: true,
   };
 }
 

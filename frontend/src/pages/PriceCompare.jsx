@@ -82,7 +82,7 @@ export default function PriceCompare() {
     fetch('/api/brands', { headers: authHeaders() })
       .then((r) => r.json())
       .then((data) => setBrandsMap(data.brands || {}))
-      .catch(() => {})
+      .catch(() => toast('브랜드 정보 로드 실패'))
   }, [authHeaders])
 
   useEffect(() => {

@@ -30,13 +30,29 @@ export default async function handler(req, res) {
       const body = readBody(req);
       const brands = body.brands || {};
 
-      await supabaseAdmin(
-        `brand_preferences?household_id=eq.${householdId}`,
-        { method: 'DELETE' },
-        token,
+      // 기존 데이터 조회 후 diff 방식으로 처리 (race condition 방지)
+      const existing = await supabaseAdmin(
+        `brand_preferences?household_id=eq.${householdId}`, {}, token
       );
+      const existingMap = {};
+      for (const row of (existing || [])) {
+        existingMap[row.item_name] = row;
+      }
 
       const entries = Object.entries(brands).filter(([k, v]) => k && v);
+      const incomingKeys = new Set(entries.map(([k]) => k.trim()));
+
+      // 삭제: 새 목록에 없는 항목
+      const toDelete = Object.keys(existingMap).filter((k) => !incomingKeys.has(k));
+      for (const key of toDelete) {
+        await supabaseAdmin(
+          `brand_preferences?household_id=eq.${householdId}&item_name=eq.${encodeURIComponent(key)}`,
+          { method: 'DELETE' },
+          token,
+        );
+      }
+
+      // upsert: 새 항목 또는 변경된 항목
       if (entries.length > 0) {
         const rows = entries.map(([item_name, brand]) => ({
           household_id: householdId,
@@ -46,6 +62,7 @@ export default async function handler(req, res) {
         }));
         await supabaseAdmin('brand_preferences', {
           method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates' },
           body: JSON.stringify(rows),
         }, token);
       }
