@@ -2,6 +2,7 @@
 
 export const ALL_CATEGORIES = [
   { key: '욕실',     icon: '🛁', default: true },
+  { key: '거실',     icon: '🛋️', default: true },
   { key: '주방',     icon: '🍳', default: true },
   { key: '세탁실',   icon: '🧺', default: true },
   { key: '청소',     icon: '🧹', default: true },
@@ -29,6 +30,17 @@ export const ITEMS_BY_CATEGORY = {
     { name: '면봉',       icon: '🩹', brand: '',           spec: '200개입',   baselineDays: 90 },
     { name: '화장솜',     icon: '🧻', brand: '',           spec: '80매',      baselineDays: 30 },
     { name: '생리대',     icon: '🩹', brand: '',           spec: '1팩',       baselineDays: 30 },
+  ],
+  '거실': [
+    { name: '건전지',           icon: '🔋', brand: '에너자이저', spec: 'AA 8개',   baselineDays: 50 },
+    { name: '공기청정기 필터',   icon: '🌬️', brand: '',           spec: '1개',      baselineDays: 90 },
+    { name: '에어컨 필터',       icon: '❄️', brand: '',           spec: '1개',      baselineDays: 90 },
+    { name: '방향제',           icon: '🌸', brand: '페브리즈',   spec: '1개',      baselineDays: 30 },
+    { name: '섬유탈취제',       icon: '👕', brand: '페브리즈',   spec: '300ml',    baselineDays: 30 },
+    { name: '먼지떨이',         icon: '🪶', brand: '',           spec: '1개',      baselineDays: 180 },
+    { name: '모기향',           icon: '🦟', brand: '',           spec: '1개',      baselineDays: 60 },
+    { name: '방습제',           icon: '💧', brand: '',           spec: '1개',      baselineDays: 60 },
+    { name: '전구',             icon: '💡', brand: '필립스',     spec: 'LED 1개',  baselineDays: 365 },
   ],
   '주방': [
     { name: '주방세제',       icon: '🍽️', brand: '트리오',  spec: '500ml',     baselineDays: 60 },

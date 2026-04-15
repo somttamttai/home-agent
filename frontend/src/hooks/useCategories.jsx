@@ -4,6 +4,7 @@ import { ITEMS_BY_CATEGORY } from '../utils/onboardingData.js'
 
 const BASE_CATEGORIES = [
   { key: '욕실',     icon: '🛁' },
+  { key: '거실',     icon: '🛋️' },
   { key: '주방',     icon: '🍳' },
   { key: '세탁실',   icon: '🧺' },
   { key: '청소',     icon: '🧹' },
