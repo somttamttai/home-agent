@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme.js'
 import { useConsumables } from '../hooks/useConsumables.jsx'
 import { useCategories } from '../hooks/useCategories.jsx'
 import Modal from '../components/Modal.jsx'
 import BottomSheet from '../components/BottomSheet.jsx'
+import PurchaseCompleteModal from '../components/PurchaseCompleteModal.jsx'
+import EarlyPurchaseModal from '../components/EarlyPurchaseModal.jsx'
 import { useToast } from '../components/Toast.jsx'
+import { useAuth } from '../hooks/useAuth.jsx'
 
 const EMOJI_PICKS = ['🛁','🍳','🧺','🧹','🛏','👔','🍼','💊','🐾','🚗','🏋️','📚','🎮','🐶','🧴','🪥','🧽','🧤','🌸','☕']
 
@@ -81,9 +84,10 @@ function CategoryModal({ open, onClose, onSave, initial }) {
 export default function Home() {
   const nav = useNavigate()
   const { theme, toggle } = useTheme()
-  const { items, loading, error, reload, onRefresh } = useConsumables()
+  const { items, loading, error, reload, onRefresh, onStockChange, onUpdate } = useConsumables()
   const { categories, getIcon, customCategories, addCategory, updateCategory, deleteCategory } = useCategories()
   const toast = useToast()
+  const { authHeaders } = useAuth()
 
   const [addCatOpen, setAddCatOpen] = useState(false)
   const [editCat, setEditCat] = useState(null)
@@ -91,6 +95,71 @@ export default function Home() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleteMoveTarget, setDeleteMoveTarget] = useState(null)
   const [urgentExpanded, setUrgentExpanded] = useState(false)
+  const [purchaseModalOpen, setPurchaseModalOpen] = useState(false)
+  const [earlyDetections, setEarlyDetections] = useState([])
+
+  // 구매하기 링크 클릭 후 돌아왔을 때 구매완료 팝업 표시
+  useEffect(() => {
+    const handleFocus = () => {
+      if (sessionStorage.getItem('fromCompare') === '1') {
+        sessionStorage.removeItem('fromCompare')
+        setPurchaseModalOpen(true)
+      }
+    }
+    window.addEventListener('focus', handleFocus)
+    // 초기 로드 시에도 체크 (탭 전환 없이 뒤로가기 한 경우)
+    handleFocus()
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [])
+
+  // 조기구매 감지
+  const checkEarlyPurchase = useCallback(async (results) => {
+    if (!results || results.length === 0) return
+    const detections = []
+    for (const { item, purchase, qty } of results) {
+      try {
+        const r = await fetch(`/api/purchases/${item.id}`, { headers: authHeaders() })
+        if (!r.ok) continue
+        const data = await r.json()
+        if (data.stats.total_purchases < 3) continue
+        const avgInterval = data.stats.avg_interval_days
+        if (!avgInterval) continue
+
+        // 현재 구매까지의 간격 계산
+        const sorted = [...data.history].sort(
+          (a, b) => new Date(b.purchased_at) - new Date(a.purchased_at),
+        )
+        if (sorted.length < 2) continue
+        const latest = new Date(sorted[0].purchased_at)
+        const prev = new Date(sorted[1].purchased_at)
+        const actualInterval = (latest - prev) / (1000 * 60 * 60 * 24)
+
+        // 평균보다 2배 이상 일찍 구매했으면 감지
+        if (actualInterval < avgInterval / 2) {
+          detections.push({
+            item,
+            purchase,
+            avgInterval: Math.round(avgInterval),
+            actualInterval: Math.round(actualInterval),
+          })
+        }
+      } catch {}
+    }
+    if (detections.length > 0) {
+      setEarlyDetections(detections)
+    }
+  }, [authHeaders])
+
+  const handlePurchaseClose = useCallback((results) => {
+    setPurchaseModalOpen(false)
+    if (results && results.length > 0) {
+      checkEarlyPurchase(results)
+    }
+  }, [checkEarlyPurchase])
+
+  const handleEarlyUpdate = useCallback(async (item, _newStock, patch) => {
+    if (patch) await onUpdate(item, patch)
+  }, [onUpdate])
 
   useEffect(() => {
     if (!('Notification' in window)) return
@@ -413,6 +482,20 @@ export default function Home() {
           </div>
         )}
       </BottomSheet>
+
+      <PurchaseCompleteModal
+        open={purchaseModalOpen}
+        onClose={handlePurchaseClose}
+        items={items}
+        onStockChange={onStockChange}
+      />
+
+      <EarlyPurchaseModal
+        open={earlyDetections.length > 0}
+        onClose={() => setEarlyDetections([])}
+        detections={earlyDetections}
+        onStockChange={handleEarlyUpdate}
+      />
     </div>
   )
 }

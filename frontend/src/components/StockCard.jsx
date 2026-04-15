@@ -5,7 +5,6 @@ import { useToast } from './Toast.jsx'
 import { calcDailyUsage, getBaselineDays } from '../utils/consumption.js'
 import { effectivePeople, formatPeople } from '../utils/family.js'
 import { useAuth } from '../hooks/useAuth.jsx'
-import { SENSE_LEVELS, stockToSense, senseToStock } from '../utils/stockMode.js'
 import { useCategories } from '../hooks/useCategories.jsx'
 
 // ───────────────────────────────────────────────────────────────────────
@@ -21,6 +20,7 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
   const [activeModal, setActiveModal] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showCatMove, setShowCatMove] = useState(false)
+  const [showAddQty, setShowAddQty] = useState(false)
 
   const pct = max_stock && max_stock > 0
     ? Math.max(0, Math.min(100, (current_stock / max_stock) * 100))
@@ -31,7 +31,7 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
   const step = daily_usage && daily_usage < 1 ? 0.5 : 1
 
   const onMinus = () => onStockChange?.(item, Math.max(0, Number(current_stock) - step))
-  const onPlus = () => onStockChange?.(item, Number(current_stock) + step)
+  const onPlus = () => setShowAddQty(true)
 
   const closeSheet = () => {
     setSheetOpen(false)
@@ -86,33 +86,14 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
           <div style={{ width: `${pct}%` }} />
         </div>
 
-        {onStockChange && !max_stock && daily_usage > 0 && (
-          <div className="sense-controls">
-            {SENSE_LEVELS.map((l) => {
-              const active = stockToSense(days_left) === l.key
-              return (
-                <button
-                  key={l.key}
-                  type="button"
-                  className={`sense-btn ${active ? 'active' : ''} ${l.key}`}
-                  onClick={() => onStockChange(item, senseToStock(l.key, daily_usage))}
-                >
-                  <span className="icon">{l.icon}</span>
-                  <span className="text">{l.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {onStockChange && (max_stock > 0 || !daily_usage) && (
+        {onStockChange && (
           <div className="stock-controls">
             <button type="button" onClick={onMinus} aria-label="재고 감소">−</button>
             <span className="current">
               {current_stock}
               {max_stock ? ` / ${max_stock}` : ''}
             </span>
-            <button type="button" onClick={onPlus} aria-label="재고 증가">＋</button>
+            <button type="button" onClick={onPlus} aria-label="재고 추가">＋</button>
           </div>
         )}
 
@@ -209,7 +190,101 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
         onClose={closeModal}
         onUpdate={onUpdate}
       />
+
+      {/* 재고 추가 수량 팝업 */}
+      <AddQuantityModal
+        open={showAddQty}
+        item={item}
+        onClose={() => setShowAddQty(false)}
+        onStockChange={onStockChange}
+      />
     </>
+  )
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// 재고 추가 수량 팝업
+// ───────────────────────────────────────────────────────────────────────
+const ADD_QTY_OPTIONS = [1, 2, 3, 4]
+
+function AddQuantityModal({ open, item, onClose, onStockChange }) {
+  const toast = useToast()
+  const { authHeaders } = useAuth()
+  const [customMode, setCustomMode] = useState(false)
+  const [customQty, setCustomQty] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      setCustomMode(false)
+      setCustomQty('')
+    }
+  }, [open])
+
+  const addStock = async (qty) => {
+    const newStock = Number(item.current_stock) + qty
+    onStockChange(item, newStock)
+
+    // purchase_history 저장 (gift 타입 = 직접 수정)
+    try {
+      await fetch('/api/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          consumable_id: item.id,
+          quantity: qty,
+          purchase_type: 'gift',
+          days_before_depletion: item.days_left,
+        }),
+      })
+    } catch {}
+    toast(`+${qty}개 추가됨`)
+    onClose()
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={`${item.name} 추가`}>
+      {!customMode ? (
+        <div className="add-qty-grid">
+          {ADD_QTY_OPTIONS.map((n) => (
+            <button
+              key={n}
+              type="button"
+              className="btn tonal add-qty-btn"
+              onClick={() => addStock(n)}
+            >
+              {n}개
+            </button>
+          ))}
+          <button
+            type="button"
+            className="btn tonal add-qty-btn"
+            onClick={() => setCustomMode(true)}
+          >
+            직접입력
+          </button>
+        </div>
+      ) : (
+        <div className="add-qty-custom">
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            autoFocus
+            value={customQty}
+            onChange={(e) => setCustomQty(e.target.value)}
+            placeholder="수량 입력"
+          />
+          <button
+            type="button"
+            className="btn"
+            disabled={!customQty || Number(customQty) <= 0}
+            onClick={() => addStock(Number(customQty))}
+          >
+            추가
+          </button>
+        </div>
+      )}
+    </Modal>
   )
 }
 

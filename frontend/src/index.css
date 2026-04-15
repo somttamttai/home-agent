@@ -2172,3 +2172,143 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 .sense-btn.active.plenty { border-color: #007AFF; background: #E8F0FE; }
 [data-theme="dark"] .sense-btn.active.plenty { background: #1C2433; }
 .sense-btn.active.plenty .text { color: #007AFF; }
+
+/* ── 재고 추가 수량 팝업 ───────────────────────────────────────── */
+.add-qty-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 8px 0;
+}
+.add-qty-btn {
+  min-width: 64px;
+  padding: 12px 16px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+}
+.add-qty-custom {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+}
+.add-qty-custom input {
+  flex: 1;
+  font-size: 16px;
+  text-align: center;
+}
+
+/* ── 구매 완료 모달 ────────────────────────────────────────────── */
+.purchase-checklist {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.purchase-hint {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+.purchase-item {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+.purchase-item:last-child { border-bottom: none; }
+.purchase-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.purchase-check-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+.purchase-name {
+  flex: 1;
+  font-weight: 600;
+}
+.purchase-urgent {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--danger);
+  background: var(--danger-bg);
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-left: 6px;
+}
+.purchase-days {
+  font-size: 13px;
+  color: var(--text-sub);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.qty-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-left: 30px;
+}
+.qty-btn {
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: all .15s;
+}
+.qty-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.qty-custom-input {
+  width: 60px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--primary);
+  font-size: 14px;
+  text-align: center;
+  margin-left: 30px;
+  margin-top: 8px;
+}
+
+/* ── 조기 구매 감지 모달 ───────────────────────────────────────── */
+.early-purchase-body {
+  text-align: center;
+  padding: 4px 0;
+}
+.early-purchase-msg {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.early-purchase-detail {
+  font-size: 13px;
+  color: var(--text-sub);
+  margin-bottom: 20px;
+}
+.early-purchase-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.early-purchase-options .btn {
+  font-size: 14px !important;
+  padding: 14px !important;
+}
+.early-purchase-counter {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--text-hint);
+  font-weight: 600;
+}

@@ -106,6 +106,67 @@ export async function lowStockAlerts(householdId = null) {
   return rows.map(annotateStock).filter((r) => r.need_reorder);
 }
 
+// ── purchases ─────────────────────────────────────────────────────────
+export async function createPurchase(body) {
+  if (!body || !body.consumable_id) throw new BadRequest('consumable_id is required');
+  const row = {
+    household_id: body.household_id,
+    consumable_id: body.consumable_id,
+    purchased_at: body.purchased_at || new Date().toISOString(),
+    days_before_depletion: body.days_before_depletion ?? null,
+    purchase_type: body.purchase_type || 'normal',
+    quantity: body.quantity ?? 1,
+  };
+  return await supabase.insert('purchase_history', row);
+}
+
+export async function getPurchaseHistory(consumableId, householdId = null) {
+  const params = {
+    consumable_id: `eq.${consumableId}`,
+    order: 'purchased_at.desc',
+  };
+  if (householdId) params.household_id = `eq.${householdId}`;
+  const rows = await supabase.select('purchase_history', params);
+
+  let avgIntervalDays = null;
+  let avgDaysBeforeDepletion = null;
+
+  if (rows.length >= 2) {
+    const sorted = [...rows].sort(
+      (a, b) => new Date(a.purchased_at) - new Date(b.purchased_at),
+    );
+    let totalInterval = 0;
+    for (let i = 1; i < sorted.length; i++) {
+      const diff = new Date(sorted[i].purchased_at) - new Date(sorted[i - 1].purchased_at);
+      totalInterval += diff / (1000 * 60 * 60 * 24);
+    }
+    avgIntervalDays = Math.round((totalInterval / (sorted.length - 1)) * 10) / 10;
+  }
+
+  const withDepletion = rows.filter((r) => r.days_before_depletion != null);
+  if (withDepletion.length > 0) {
+    const sum = withDepletion.reduce((s, r) => s + Number(r.days_before_depletion), 0);
+    avgDaysBeforeDepletion = Math.round((sum / withDepletion.length) * 10) / 10;
+  }
+
+  return {
+    history: rows,
+    stats: {
+      total_purchases: rows.length,
+      avg_interval_days: avgIntervalDays,
+      avg_days_before_depletion: avgDaysBeforeDepletion,
+    },
+  };
+}
+
+export async function updatePurchaseType(purchaseId, purchaseType) {
+  const valid = ['normal', 'event', 'gift', 'early'];
+  if (!valid.includes(purchaseType)) throw new BadRequest('invalid purchase_type');
+  const rows = await supabase.update('purchase_history', { id: purchaseId }, { purchase_type: purchaseType });
+  if (!rows || rows.length === 0) throw new NotFound('purchase not found');
+  return rows[0];
+}
+
 // ── prices ─────────────────────────────────────────────────────────────
 // 배송비 불명 시 보수적 추정값
 const ASSUMED_SHIPPING = 3000;

@@ -275,6 +275,7 @@ export default function PriceCompare() {
                           href={it.link}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => sessionStorage.setItem('fromCompare', '1')}
                         >
                           🛒 구매하기
                         </a>
