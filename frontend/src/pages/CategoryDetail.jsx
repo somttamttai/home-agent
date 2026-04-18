@@ -21,7 +21,7 @@ export default function CategoryDetail() {
 
   const {
     items, loading, error, reload,
-    onStockChange, onUpdate, onDelete, onRefresh, reloadBrands,
+    onStockChange, onUpdate, onDelete, onRefresh,
   } = useConsumables()
 
   const filtered = useMemo(
@@ -109,8 +109,7 @@ export default function CategoryDetail() {
               {filtered.map((it) => (
                 <StockCard key={it.id} item={it}
                   onRefresh={onRefresh} onStockChange={onStockChange}
-                  onUpdate={onUpdate} onDelete={onDelete}
-                  onBrandSaved={reloadBrands} />
+                  onUpdate={onUpdate} onDelete={onDelete} />
               ))}
             </div>
           </>

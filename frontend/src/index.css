@@ -42,6 +42,14 @@
   --glass-edge: inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(0,0,0,0.15);
   --glass-edge-soft: inset 0 1px 0 rgba(255,255,255,0.9);
 
+  /* 글래스 유틸 (색상 유지, 구조만) */
+  --glass-inset-dark: inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.2);
+  --glass-inset-light: inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -1px 1px rgba(0,0,0,0.04);
+  --glass-drop-dark: 0 2px 8px rgba(0,0,0,0.2), 0 8px 28px rgba(0,0,0,0.28);
+  --glass-drop-light: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.08), 0 12px 28px rgba(0,0,0,0.08);
+  --glass-border-dark: 1px solid rgba(255,255,255,0.15);
+  --glass-border-light: 1px solid rgba(0,0,0,0.05);
+
   --radius: 16px;
   --radius-sm: 12px;
   --radius-lg: 20px;
@@ -74,6 +82,12 @@
       linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 48%, rgba(0,0,0,0.12) 55%, rgba(0,0,0,0.28) 100%);
     --glass-edge: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.4);
     --glass-edge-soft: inset 0 1px 0 rgba(255,255,255,0.1);
+    --glass-inset-dark: inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 1px rgba(0,0,0,0.3);
+    --glass-inset-light: inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 1px rgba(0,0,0,0.35);
+    --glass-drop-dark: 0 2px 8px rgba(0,0,0,0.45), 0 8px 28px rgba(0,0,0,0.55);
+    --glass-drop-light: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.4), 0 12px 28px rgba(0,0,0,0.45);
+    --glass-border-dark: 1px solid rgba(255,255,255,0.1);
+    --glass-border-light: 1px solid rgba(255,255,255,0.06);
   }
 }
 
@@ -119,6 +133,12 @@
     linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 48%, rgba(0,0,0,0.12) 55%, rgba(0,0,0,0.28) 100%);
   --glass-edge: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.4);
   --glass-edge-soft: inset 0 1px 0 rgba(255,255,255,0.1);
+  --glass-inset-dark: inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -1px 1px rgba(0,0,0,0.3);
+  --glass-inset-light: inset 0 1px 1px rgba(255,255,255,0.08), inset 0 -1px 1px rgba(0,0,0,0.35);
+  --glass-drop-dark: 0 2px 8px rgba(0,0,0,0.45), 0 8px 28px rgba(0,0,0,0.55);
+  --glass-drop-light: 0 1px 2px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.4), 0 12px 28px rgba(0,0,0,0.45);
+  --glass-border-dark: 1px solid rgba(255,255,255,0.1);
+  --glass-border-light: 1px solid rgba(255,255,255,0.06);
 }
 
 /* ── Reset ────────────────────────────────────────────────── */
@@ -215,12 +235,8 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   border-radius: var(--radius);
   padding: 20px;
   margin-bottom: 12px;
-  border: 1px solid var(--border);
-  box-shadow:
-    var(--glass-edge-soft),
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 6px 16px rgba(0, 0, 0, 0.06),
-    0 14px 32px rgba(0, 0, 0, 0.04);
+  border: var(--glass-border-light);
+  box-shadow: var(--glass-inset-light), var(--glass-drop-light);
 }
 
 /* ── Summary card (home top green) — glassmorphism ────────── */
@@ -245,36 +261,6 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
     0 8px 32px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-}
-/* 상단 하이라이트 (유리 반사) */
-.summary-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 45%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.25) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  border-radius: inherit;
-  pointer-events: none;
-}
-/* 좌측 반사광 */
-.summary-card::after {
-  content: '';
-  position: absolute;
-  top: 5%; left: 3%;
-  width: 35%;
-  height: 55%;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    transparent 60%
-  );
-  border-radius: 50%;
-  transform: rotate(-10deg);
-  pointer-events: none;
 }
 .summary-card > * { position: relative; z-index: 1; }
 .summary-card .label {
@@ -330,15 +316,11 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 /* ── Stock card ───────────────────────────────────────────── */
 .stock-card {
   background: var(--card-gradient);
-  border: 1px solid var(--border);
+  border: var(--glass-border-light);
   border-radius: var(--radius);
   padding: 18px 20px;
   margin-bottom: 10px;
-  box-shadow:
-    var(--glass-edge-soft),
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 6px 16px rgba(0, 0, 0, 0.06),
-    0 14px 32px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--glass-inset-light), var(--glass-drop-light);
 }
 .stock-card.warning { border-color: var(--danger); }
 
@@ -412,6 +394,26 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   color: var(--text-sub);
   font-weight: 600;
 }
+.stock-card .days .phrase-main {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.stock-card .days .phrase-sub {
+  font-size: 11px;
+  margin-top: 4px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+.stock-card .usage-line {
+  font-size: 11px;
+  color: var(--text-hint);
+  font-weight: 600;
+  margin-top: 3px;
+  letter-spacing: -0.01em;
+}
 
 .progress-bar {
   height: 6px;
@@ -473,73 +475,62 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 }
 .stock-card .refresh-btn:active { transform: scale(0.98); }
 
-/* ── Buttons ──────────────────────────────────────────────── */
+/* ── Buttons — glass 구조 (색상 유지) ──────────────────────── */
 .btn {
   display: inline-block;
   position: relative;
-  overflow: hidden;
-  border: none;
+  border: var(--glass-border-dark);
   border-radius: 14px;
   padding: 16px 22px;
   font-size: 16px;
   font-weight: 700;
-  background: var(--btn-primary-gradient);
+  background: var(--primary);
   color: #FFFFFF;
   text-align: center;
-  transition: transform 0.1s, opacity 0.15s, box-shadow 0.15s, filter 0.15s;
+  transition: transform 0.1s, filter 0.15s, box-shadow 0.15s;
   letter-spacing: -0.01em;
-  box-shadow:
-    var(--glass-edge),
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    0 4px 10px rgba(var(--primary-rgb), 0.28),
-    0 10px 22px rgba(var(--primary-rgb), 0.22);
+  box-shadow: var(--glass-inset-dark), var(--glass-drop-dark);
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
-.btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--glass-film-soft);
-  border-radius: inherit;
-  pointer-events: none;
-}
-.btn > * { position: relative; }
 .btn:active {
   transform: translateY(1px) scale(0.99);
   filter: brightness(0.95);
   box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.18),
-    0 1px 2px rgba(var(--primary-rgb), 0.15);
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.15);
 }
 .btn.block { display: block; width: 100%; }
 .btn.lg { padding: 18px 22px; font-size: 17px; }
 .btn.secondary {
-  background: var(--card-gradient);
+  background: var(--card);
   color: var(--text);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--sheen-top), var(--shadow-sm);
+  border: var(--glass-border-light);
+  box-shadow: var(--glass-inset-light), var(--glass-drop-light);
   text-shadow: none;
 }
 .btn.tonal {
   background: var(--primary-light);
   color: var(--primary);
-  box-shadow: var(--sheen-top), 0 1px 2px rgba(var(--primary-rgb), 0.1);
+  border: var(--glass-border-light);
+  box-shadow: var(--glass-inset-light), var(--glass-drop-light);
   text-shadow: none;
 }
 .btn.disabled, .btn:disabled {
   background: var(--border);
   color: var(--text-hint);
   cursor: not-allowed;
+  border: var(--glass-border-light);
   box-shadow: none;
   text-shadow: none;
+  backdrop-filter: none;
 }
 .btn.disabled:active, .btn:disabled:active { transform: none; opacity: 1; filter: none; }
 .btn.danger {
-  background: var(--btn-danger-gradient);
-  box-shadow:
-    var(--sheen-btn),
-    0 2px 4px rgba(255, 59, 48, 0.2),
-    0 6px 14px rgba(255, 59, 48, 0.22);
+  background: var(--danger);
+  border: var(--glass-border-dark);
+  box-shadow: var(--glass-inset-dark), var(--glass-drop-dark);
 }
 .btn.small { padding: 10px 14px; font-size: 13px; border-radius: 10px; }
 
@@ -628,26 +619,25 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   align-items: center; justify-content: center;
   width: 50px; height: 50px;
   border-radius: 50%;
-  background: var(--btn-primary-gradient);
+  background: linear-gradient(
+    135deg,
+    rgba(45, 130, 70, 0.85) 0%,
+    rgba(20, 90, 45, 0.95) 40%,
+    rgba(10, 70, 30, 1) 100%
+  );
   color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.18),
-    0 2px 4px rgba(0, 0, 0, 0.1),
-    0 6px 14px rgba(var(--primary-rgb), 0.35),
-    0 14px 28px rgba(var(--primary-rgb), 0.3);
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   margin: -22px auto 2px;
   font-size: 26px;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-}
-.tabbar a.tab-add .icon::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--glass-film-soft);
-  border-radius: inherit;
-  pointer-events: none;
 }
 
 /* ── Alert badge ──────────────────────────────────────────── */
@@ -935,14 +925,14 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 .theme-toggle {
   width: 44px; height: 44px;
   border-radius: 14px;
-  background: var(--card-gradient);
-  border: 1px solid var(--border);
+  background: var(--card);
+  border: var(--glass-border-light);
   color: var(--text);
   font-size: 18px;
   display: flex; align-items: center; justify-content: center;
   transition: box-shadow 0.15s, transform 0.1s;
   flex-shrink: 0;
-  box-shadow: var(--sheen-top), var(--shadow-sm);
+  box-shadow: var(--glass-inset-light), var(--glass-drop-light);
 }
 .theme-toggle:active {
   transform: translateY(1px) scale(0.96);
@@ -1133,7 +1123,7 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 }
 .category-grid-card {
   background: var(--card-gradient);
-  border: 1.5px solid var(--border);
+  border: var(--glass-border-light);
   border-radius: var(--radius);
   padding: 18px 16px;
   text-align: left;
@@ -1141,11 +1131,7 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   color: var(--text);
   cursor: pointer;
   transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
-  box-shadow:
-    var(--glass-edge-soft),
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 6px 14px rgba(0, 0, 0, 0.06),
-    0 12px 28px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--glass-inset-light), var(--glass-drop-light);
 }
 .category-grid-card:active {
   transform: translateY(1px) scale(0.98);
@@ -1684,6 +1670,34 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.4;
+}
+
+/* ── Brand chips (상품 정보 수정) ─────────────────────────── */
+.brand-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.brand-chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text-sub);
+  border: var(--glass-border-light);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  box-shadow: var(--glass-inset-light), 0 1px 2px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: transform 0.1s, color 0.15s, background 0.15s, border-color 0.15s;
+}
+.brand-chip:active { transform: scale(0.96); }
+.brand-chip.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 /* ── Tab switcher (Add page) ──────────────────────────────── */

@@ -4,13 +4,16 @@ import Modal from './Modal.jsx'
 import { useToast } from './Toast.jsx'
 import { calcDailyUsage, getBaselineDays } from '../utils/consumption.js'
 import { effectivePeople, formatPeople } from '../utils/family.js'
+import { historyBrands, historySpecs, recommendSpecs } from '../utils/brandRecommend.js'
+import { formatDaysLeft, formatDailyUsage } from '../utils/stockDisplay.js'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useCategories } from '../hooks/useCategories.jsx'
+import { useConsumables } from '../hooks/useConsumables.jsx'
 
 // ───────────────────────────────────────────────────────────────────────
 // 메인 카드
 // ───────────────────────────────────────────────────────────────────────
-export default function StockCard({ item, onRefresh, onStockChange, onUpdate, onDelete, onBrandSaved }) {
+export default function StockCard({ item, onRefresh, onStockChange, onUpdate, onDelete }) {
   const {
     name, brand, spec, current_stock, max_stock,
     daily_usage, days_left, reorder_point, need_reorder,
@@ -50,6 +53,9 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
     closeSheet()
   }
 
+  const stockInfo = formatDaysLeft(days_left)
+  const usageText = formatDailyUsage(daily_usage)
+
   return (
     <>
       <div className={`stock-card ${need_reorder ? 'warning' : ''}`}>
@@ -59,6 +65,9 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
             <div className="meta">
               {[brand, spec].filter(Boolean).join(' · ') || '\u00A0'}
             </div>
+            {usageText && (
+              <div className="usage-line">⏱ {usageText}</div>
+            )}
           </div>
           <div className="aside">
             <button
@@ -69,11 +78,11 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
             >
               ⋯
             </button>
-            <div className="days">
-              {days_left != null ? (
+            <div className="days" style={stockInfo ? { color: stockInfo.color } : undefined}>
+              {stockInfo ? (
                 <>
-                  <div className="num">{days_left}</div>
-                  <div className="unit-label">일 남음</div>
+                  <div className="phrase-main">{stockInfo.value}{stockInfo.unit}</div>
+                  <div className="phrase-sub">남았어요</div>
                 </>
               ) : (
                 <div className="none">사용량<br />미입력</div>
@@ -117,11 +126,6 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
             <button type="button" className="sheet-item" onClick={() => openModal('info')}>
               <span className="icon">✏️</span>
               <span className="label">상품 정보 수정</span>
-              <span className="chev">›</span>
-            </button>
-            <button type="button" className="sheet-item" onClick={() => openModal('brand')}>
-              <span className="icon">🏷️</span>
-              <span className="label">선호 브랜드 설정</span>
               <span className="chev">›</span>
             </button>
             <button type="button" className="sheet-item" onClick={() => openModal('consumption')}>
@@ -173,14 +177,6 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
         item={item}
         onClose={closeModal}
         onUpdate={onUpdate}
-      />
-
-      {/* 선호 브랜드 모달 */}
-      <BrandModal
-        open={activeModal === 'brand'}
-        item={item}
-        onClose={closeModal}
-        onBrandSaved={onBrandSaved}
       />
 
       {/* 소비 속도 모달 */}
@@ -326,6 +322,7 @@ function CatMoveList({ item, onUpdate, onClose }) {
 function InfoModal({ open, item, onClose, onUpdate }) {
   const toast = useToast()
   const { categoryKeys } = useCategories()
+  const { items } = useConsumables()
   const [form, setForm] = useState(() => initInfo(item))
   const [saving, setSaving] = useState(false)
 
@@ -334,6 +331,18 @@ function InfoModal({ open, item, onClose, onUpdate }) {
   }, [open, item])
 
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  // 브랜드 칩: 사용자 이력이 있을 때만 최대 3개
+  const brandChips = useMemo(
+    () => historyBrands(items, { excludeName: item.name }),
+    [items, item.name],
+  )
+  // 규격 칩: 상품명 기반 추천 우선, 추천 없으면 history fallback
+  const specChips = useMemo(() => {
+    const rec = recommendSpecs(form.name)
+    if (rec.length > 0) return rec
+    return historySpecs(items, { excludeName: item.name })
+  }, [form.name, items, item.name])
 
   const handleSave = async () => {
     if (!form.name.trim()) {
@@ -398,6 +407,17 @@ function InfoModal({ open, item, onClose, onUpdate }) {
           onChange={setField('brand')}
           placeholder="예: 유한킴벌리"
         />
+        {brandChips.length > 0 && (
+          <div className="brand-chips">
+            {brandChips.map((b) => (
+              <button key={b} type="button"
+                className={`brand-chip ${form.brand.trim() === b ? 'active' : ''}`}
+                onClick={() => setForm((f) => ({ ...f, brand: b }))}>
+                {b}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="form-field">
         <label className="label">규격</label>
@@ -406,6 +426,17 @@ function InfoModal({ open, item, onClose, onUpdate }) {
           onChange={setField('spec')}
           placeholder="예: 3겹 30m 30롤"
         />
+        {specChips.length > 0 && (
+          <div className="brand-chips">
+            {specChips.map((s) => (
+              <button key={s} type="button"
+                className={`brand-chip ${form.spec.trim() === s ? 'active' : ''}`}
+                onClick={() => setForm((f) => ({ ...f, spec: s }))}>
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="form-field" style={{ marginBottom: 0 }}>
         <label className="label">카테고리</label>
@@ -424,83 +455,6 @@ function initInfo(item) {
     spec: item.spec || '',
     category: item.category || '기타',
   }
-}
-
-// ───────────────────────────────────────────────────────────────────────
-// 선호 브랜드 모달
-// ───────────────────────────────────────────────────────────────────────
-function BrandModal({ open, item, onClose, onBrandSaved }) {
-  const toast = useToast()
-  const { authHeaders } = useAuth()
-  const [brand, setBrand] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      fetch('/api/brands', { headers: authHeaders() })
-        .then((r) => r.json())
-        .then((data) => setBrand((data.brands || {})[item.name] || ''))
-        .catch(() => setBrand(''))
-    }
-  }, [open, item, authHeaders])
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const r = await fetch('/api/brands', { headers: authHeaders() })
-      const data = await r.json()
-      const map = data.brands || {}
-      const v = brand.trim()
-      if (v) {
-        map[item.name] = v
-      } else {
-        delete map[item.name]
-      }
-      await fetch('/api/brands', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ brands: map }),
-      })
-      toast(v ? `✅ "${v}" 브랜드로 저장됨` : '🗑 선호 브랜드 삭제됨')
-      onBrandSaved?.()
-      onClose()
-    } catch {
-      toast('❌ 저장 실패')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="선호 브랜드 설정"
-      actions={
-        <>
-          <button type="button" className="btn secondary" onClick={onClose} disabled={saving}>
-            취소
-          </button>
-          <button type="button" className="btn" onClick={handleSave} disabled={saving}>
-            {saving ? '저장중…' : '저장'}
-          </button>
-        </>
-      }
-    >
-      <div className="form-field" style={{ marginBottom: 0 }}>
-        <label className="label">{item.name} 의 선호 브랜드</label>
-        <input
-          value={brand}
-          onChange={(e) => setBrand(e.target.value)}
-          placeholder="예: 유한킴벌리"
-          autoFocus
-        />
-        <div className="form-hint">
-          🏷️ 이 브랜드로 가격비교 할게요
-        </div>
-      </div>
-    </Modal>
-  )
 }
 
 // ───────────────────────────────────────────────────────────────────────
