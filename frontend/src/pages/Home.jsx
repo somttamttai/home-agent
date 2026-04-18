@@ -261,11 +261,11 @@ export default function Home() {
       <div className="home-header">
         <div className="greet-wrap">
           <div className="greet">{greeting()} 👋</div>
-          <div className="sub">
+          <div className={`sub ${!loading && low.length > 0 ? 'sub-alert' : ''}`}>
             {loading
               ? '\u00A0'
               : low.length > 0
-                ? `오늘 신경쓸 게 ${low.length}개예요`
+                ? (<>오늘 신경쓸 게 <span className="sub-count">{low.length}개</span>예요</>)
                 : '모든 재고가 여유로워요 ✅'}
           </div>
         </div>
@@ -369,10 +369,12 @@ export default function Home() {
                 const c = counts[cat] || { total: 0, low: 0 }
                 const hasLow = c.low > 0
                 const isCustom = customKeys.has(cat)
+                const go = () => nav(`/category/${encodeURIComponent(cat)}`)
                 return (
-                  <button key={cat} type="button"
+                  <div key={cat} role="button" tabIndex={0}
                     className={`category-grid-card ${hasLow ? 'has-low' : ''}`}
-                    onClick={() => nav(`/category/${encodeURIComponent(cat)}`)}>
+                    onClick={go}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go() } }}>
                     <div className="icon">{getIcon(cat)}</div>
                     <div className="name">{cat}</div>
                     <div className="total">{c.total}<span className="unit">개</span></div>
@@ -387,7 +389,7 @@ export default function Home() {
                         ⋯
                       </button>
                     )}
-                  </button>
+                  </div>
                 )
               })}
               <button type="button" className="category-grid-card add-card"

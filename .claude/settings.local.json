@@ -32,7 +32,9 @@
       "Bash(npx vercel *)",
       "Bash(vercel dev *)",
       "Bash(curl *)",
-      "Bash(taskkill //F //IM \"node.exe\")"
+      "Bash(taskkill //F //IM \"node.exe\")",
+      "Bash(netstat -ano)",
+      "Bash(taskkill *)"
     ]
   }
 }
