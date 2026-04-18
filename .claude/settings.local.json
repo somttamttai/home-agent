@@ -28,7 +28,11 @@
       "Bash(wc -l \"/c/Users/박상민/home-agent/frontend/src/pages\"/*)",
       "Bash(xargs wc:*)",
       "Bash(wc -l \"/c/Users/박상민/home-agent/frontend/src/components\"/*)",
-      "Bash(wc -l \"/c/Users/박상민/home-agent/frontend/src/hooks\"/* \"/c/Users/박상민/home-agent/frontend/src/utils\"/*)"
+      "Bash(wc -l \"/c/Users/박상민/home-agent/frontend/src/hooks\"/* \"/c/Users/박상민/home-agent/frontend/src/utils\"/*)",
+      "Bash(npx vercel *)",
+      "Bash(vercel dev *)",
+      "Bash(curl *)",
+      "Bash(taskkill //F //IM \"node.exe\")"
     ]
   }
 }
