@@ -35,7 +35,12 @@
       "Bash(taskkill //F //IM \"node.exe\")",
       "Bash(netstat -ano)",
       "Bash(taskkill *)",
-      "Bash(awk '/^  return \\\\\\($/,/^    <div/ { print NR\": \"$0 }' C:/Users/박상민/home-agent/frontend/src/pages/__TRACKED_VAR__.jsx)"
+      "Bash(awk '/^  return \\\\\\($/,/^    <div/ { print NR\": \"$0 }' C:/Users/박상민/home-agent/frontend/src/pages/__TRACKED_VAR__.jsx)",
+      "Bash(awk 'NR>=27 && NR<=30 {print NR\": [\"length\\($0\\)\"chars] \"$0}' \"C:\\\\Users\\\\박상민\\\\home-agent\\\\supabase\\\\migrations\\\\20260425_menu_recipes_1.sql\")",
+      "Bash(grep -m 3 '\\\\\\\\r')",
+      "Bash(awk '{ for\\(i=1;i<=length\\($0\\);i++\\){c=substr\\($0,i,1\\); if\\(c==\"\\\\r\"\\) print \"CR at line \"NR\" col \"i}}' \"C:\\\\Users\\\\박상민\\\\home-agent\\\\supabase\\\\migrations\\\\20260425_menu_recipes_1.sql\")",
+      "Bash(rm scripts/fix-menu-sql.mjs)",
+      "Bash(rmdir scripts *)"
     ]
   }
 }

@@ -13,6 +13,9 @@ import Login from './pages/Login.jsx'
 import HouseholdSetup from './pages/HouseholdSetup.jsx'
 import InviteCode from './pages/InviteCode.jsx'
 import Onboarding from './pages/Onboarding.jsx'
+import Fridge from './pages/Fridge.jsx'
+import Schedule from './pages/Schedule.jsx'
+import More from './pages/More.jsx'
 import TabBar from './components/TabBar.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 
@@ -47,6 +50,9 @@ function AppRoutes() {
             <Route path="/category/:name" element={<CategoryDetail />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/invite" element={<InviteCode />} />
+            <Route path="/fridge" element={<Fridge />} />
+            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/more" element={<More />} />
           </Routes>
           <TabBar />
         </div>

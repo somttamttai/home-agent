@@ -15,6 +15,9 @@
     { "source": "/api/brands",             "destination": "/api/brands" },
     { "source": "/api/categories",         "destination": "/api/categories" },
     { "source": "/api/health",             "destination": "/api/health" },
+    { "source": "/api/fridge-favorites",   "destination": "/api/fridge-favorites" },
+    { "source": "/api/menu",               "destination": "/api/menu" },
+    { "source": "/api/menu/(.*)",          "destination": "/api/menu" },
     { "source": "/((?!api/|assets/).*)",   "destination": "/index.html" }
   ],
   "crons": [
