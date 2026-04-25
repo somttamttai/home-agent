@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import BottomSheet from './BottomSheet.jsx'
 import Modal from './Modal.jsx'
 import { useToast } from './Toast.jsx'
-import { calcDailyUsage, getBaselineDays } from '../utils/consumption.js'
-import { effectivePeople, formatPeople } from '../utils/family.js'
+import { calcDailyUsage } from '../utils/consumption.js'
 import { historyBrands, historySpecs, recommendSpecs } from '../utils/brandRecommend.js'
 import { formatDaysLeft, formatDailyUsage } from '../utils/stockDisplay.js'
 import { useAuth } from '../hooks/useAuth.jsx'
@@ -19,22 +18,24 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
     daily_usage, days_left, reorder_point, need_reorder,
   } = item
 
+  const toast = useToast()
+  const { authHeaders } = useAuth()
+
   const [sheetOpen, setSheetOpen] = useState(false)
   const [activeModal, setActiveModal] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showCatMove, setShowCatMove] = useState(false)
-  const [showAddQty, setShowAddQty] = useState(false)
+
+  // 재고 조작 선택 상태: null | 1|2|3|4 | 'custom'
+  const [selectedAdd, setSelectedAdd] = useState(null)
+  const [customQty, setCustomQty] = useState('')
+  const [savingStock, setSavingStock] = useState(false)
 
   const pct = max_stock && max_stock > 0
     ? Math.max(0, Math.min(100, (current_stock / max_stock) * 100))
     : days_left != null && reorder_point
       ? Math.max(5, Math.min(100, (days_left / (reorder_point * 3)) * 100))
       : 50
-
-  const step = daily_usage && daily_usage < 1 ? 0.5 : 1
-
-  const onMinus = () => onStockChange?.(item, Math.max(0, Number(current_stock) - step))
-  const onPlus = () => setShowAddQty(true)
 
   const closeSheet = () => {
     setSheetOpen(false)
@@ -53,12 +54,56 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
     closeSheet()
   }
 
+  const clearSelection = () => { setSelectedAdd(null); setCustomQty('') }
+  const selectAdd = (n) => setSelectedAdd((prev) => (prev === n ? null : n))
+  const selectCustom = () => { setSelectedAdd('custom'); setCustomQty('') }
+  const selectLow = () => setSelectedAdd((prev) => (prev === 'low' ? null : 'low'))
+
+  const handleSaveStock = async () => {
+    setSavingStock(true)
+    try {
+      if (selectedAdd === 'low') {
+        const du = Number(daily_usage) || 0
+        // 정확히 7일치: current_stock = 7 × daily_usage (소수 그대로 저장 → 백엔드에서 days_left = 7)
+        const newStock = du > 0 ? 7 * du : 0
+        await onStockChange?.(item, newStock)
+        toast('⚠️ 부족 상태로 변경됐어요')
+      } else {
+        const qty = selectedAdd === 'custom' ? Number(customQty) : Number(selectedAdd)
+        if (!qty || qty <= 0) { toast('수량을 입력해주세요'); return }
+        const base = Math.max(0, Math.floor(Number(current_stock) || 0))
+        await onStockChange?.(item, base + qty)
+        try {
+          await fetch('/api/purchases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeaders() },
+            body: JSON.stringify({
+              consumable_id: item.id,
+              quantity: qty,
+              purchase_type: 'gift',
+              days_before_depletion: item.days_left,
+            }),
+          })
+        } catch {}
+        toast(`+${qty}개 추가됨`)
+      }
+      clearSelection()
+    } finally {
+      setSavingStock(false)
+    }
+  }
+
+  const canSave =
+    selectedAdd === 'low' ? true :
+    selectedAdd === 'custom' ? Number(customQty) > 0 :
+    Number(selectedAdd) > 0
+
   const stockInfo = formatDaysLeft(days_left)
   const usageText = formatDailyUsage(daily_usage)
 
   return (
     <>
-      <div className={`stock-card ${need_reorder ? 'warning' : ''}`}>
+      <div className={`stock-card tap-card ${need_reorder ? 'warning' : ''}`}>
         <div className="top">
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="name">{name}</div>
@@ -81,7 +126,9 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
             <div className="days" style={stockInfo ? { color: stockInfo.color } : undefined}>
               {stockInfo ? (
                 <>
-                  <div className="phrase-main">{stockInfo.value}{stockInfo.unit}</div>
+                  <div key={`${stockInfo.value}-${stockInfo.unit}`} className="phrase-main number-pop">
+                    {stockInfo.value}{stockInfo.unit}
+                  </div>
                   <div className="phrase-sub">남았어요</div>
                 </>
               ) : (
@@ -96,14 +143,52 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
         </div>
 
         {onStockChange && (
-          <div className="stock-controls">
-            <button type="button" onClick={onMinus} aria-label="재고 감소">−</button>
-            <span className="current">
-              {current_stock}
-              {max_stock ? ` / ${max_stock}` : ''}
-            </span>
-            <button type="button" onClick={onPlus} aria-label="재고 추가">＋</button>
-          </div>
+          <>
+            <div className="qty-row">
+              {[1, 2, 3, 4].map((n) => (
+                <button key={n} type="button"
+                  className={`qty-btn tap-btn ${selectedAdd === n ? 'active' : ''}`}
+                  onClick={() => selectAdd(n)}
+                  aria-label={`${n}개 추가`}>
+                  +{n}
+                </button>
+              ))}
+              <button type="button"
+                className={`qty-btn tap-btn ${selectedAdd === 'custom' ? 'active' : ''}`}
+                onClick={selectCustom}
+                aria-label="직접 입력">
+                ✏️
+              </button>
+              <button type="button"
+                className={`qty-btn low tap-btn ${selectedAdd === 'low' ? 'active' : ''}`}
+                onClick={selectLow}>
+                부족
+              </button>
+            </div>
+
+            {selectedAdd === 'custom' && (
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                autoFocus
+                value={customQty}
+                onChange={(e) => setCustomQty(e.target.value)}
+                placeholder="수량 입력"
+                className="qty-custom-input"
+              />
+            )}
+
+            {selectedAdd != null && (
+              <button type="button"
+                className="qty-save-btn tap-btn fade-in"
+                onClick={handleSaveStock}
+                disabled={!canSave || savingStock}>
+                {savingStock ? '저장중…' : '저장'}
+              </button>
+            )}
+          </>
         )}
 
         {onRefresh && (
@@ -186,132 +271,85 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
         onClose={closeModal}
         onUpdate={onUpdate}
       />
-
-      {/* 재고 추가 수량 팝업 */}
-      <AddQuantityModal
-        open={showAddQty}
-        item={item}
-        onClose={() => setShowAddQty(false)}
-        onStockChange={onStockChange}
-      />
     </>
   )
 }
 
 // ───────────────────────────────────────────────────────────────────────
-// 재고 추가 수량 팝업
-// ───────────────────────────────────────────────────────────────────────
-const ADD_QTY_OPTIONS = [1, 2, 3, 4]
-
-function AddQuantityModal({ open, item, onClose, onStockChange }) {
-  const toast = useToast()
-  const { authHeaders } = useAuth()
-  const [customMode, setCustomMode] = useState(false)
-  const [customQty, setCustomQty] = useState('')
-
-  useEffect(() => {
-    if (open) {
-      setCustomMode(false)
-      setCustomQty('')
-    }
-  }, [open])
-
-  const addStock = async (qty) => {
-    const newStock = Number(item.current_stock) + qty
-    onStockChange(item, newStock)
-
-    // purchase_history 저장 (gift 타입 = 직접 수정)
-    try {
-      await fetch('/api/purchases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({
-          consumable_id: item.id,
-          quantity: qty,
-          purchase_type: 'gift',
-          days_before_depletion: item.days_left,
-        }),
-      })
-    } catch {}
-    toast(`+${qty}개 추가됨`)
-    onClose()
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title={`${item.name} 추가`}>
-      {!customMode ? (
-        <div className="add-qty-grid">
-          {ADD_QTY_OPTIONS.map((n) => (
-            <button
-              key={n}
-              type="button"
-              className="btn tonal add-qty-btn"
-              onClick={() => addStock(n)}
-            >
-              {n}개
-            </button>
-          ))}
-          <button
-            type="button"
-            className="btn tonal add-qty-btn"
-            onClick={() => setCustomMode(true)}
-          >
-            직접입력
-          </button>
-        </div>
-      ) : (
-        <div className="add-qty-custom">
-          <input
-            type="number"
-            inputMode="numeric"
-            min="1"
-            autoFocus
-            value={customQty}
-            onChange={(e) => setCustomQty(e.target.value)}
-            placeholder="수량 입력"
-          />
-          <button
-            type="button"
-            className="btn"
-            disabled={!customQty || Number(customQty) <= 0}
-            onClick={() => addStock(Number(customQty))}
-          >
-            추가
-          </button>
-        </div>
-      )}
-    </Modal>
-  )
-}
-
-// ───────────────────────────────────────────────────────────────────────
-// 카테고리 이동 리스트
+// 카테고리 이동/복사 리스트
 // ───────────────────────────────────────────────────────────────────────
 function CatMoveList({ item, onUpdate, onClose }) {
   const toast = useToast()
   const { categories } = useCategories()
   const currentCat = item.category || '기타'
+  const linked = Array.isArray(item.linked_categories) ? item.linked_categories : []
 
   const onMove = async (cat) => {
     if (cat === currentCat) return
     try {
-      await onUpdate(item, { category: cat })
+      // 이동 시 대상 카테고리가 linked 에 있으면 제거 (중복 방지)
+      const nextLinked = linked.filter((c) => c !== cat)
+      await onUpdate(item, { category: cat, linked_categories: nextLinked })
       toast(`📂 "${item.name}" → ${cat}`)
+      onClose()
+    } catch {}
+  }
+
+  const onCopy = async (cat) => {
+    if (cat === currentCat) return
+    if (linked.includes(cat)) return
+    try {
+      const nextLinked = [...linked, cat]
+      await onUpdate(item, { linked_categories: nextLinked })
+      toast(`📋 "${item.name}" 복사됨 → ${cat}`)
+      onClose()
+    } catch {}
+  }
+
+  const onRemoveLink = async (cat) => {
+    try {
+      const nextLinked = linked.filter((c) => c !== cat)
+      await onUpdate(item, { linked_categories: nextLinked })
+      toast(`🗑 "${cat}" 복사 해제됨`)
       onClose()
     } catch {}
   }
 
   return (
     <div>
-      {categories.map((c) => (
-        <button key={c.key} type="button"
-          className={`sheet-item ${c.key === currentCat ? 'active' : ''}`}
-          onClick={() => onMove(c.key)}>
-          <span className="icon">{c.icon}</span>
-          <span className="label">{c.key}</span>
-          {c.key === currentCat && <span className="chev">✓</span>}
-        </button>
-      ))}
+      {categories.map((c) => {
+        const isCurrent = c.key === currentCat
+        const isLinked = linked.includes(c.key)
+        return (
+          <div key={c.key} className={`cat-row ${isCurrent ? 'active' : ''}`}>
+            <span className="icon">{c.icon}</span>
+            <span className="label">
+              {c.key}
+              {isCurrent && <span className="cat-badge current">현재</span>}
+              {isLinked && <span className="cat-badge linked">복사됨</span>}
+            </span>
+            <div className="cat-actions">
+              {isLinked ? (
+                <button type="button" className="cat-action danger"
+                  onClick={() => onRemoveLink(c.key)}>
+                  복사 해제
+                </button>
+              ) : !isCurrent ? (
+                <>
+                  <button type="button" className="cat-action"
+                    onClick={() => onMove(c.key)}>
+                    이동
+                  </button>
+                  <button type="button" className="cat-action primary"
+                    onClick={() => onCopy(c.key)}>
+                    복사
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -463,13 +501,12 @@ function initInfo(item) {
 function ConsumptionModal({ open, item, onClose, onUpdate }) {
   const toast = useToast()
   const { family } = useCategories()
-  const people = effectivePeople(family)
-
   const [form, setForm] = useState(() => initConsumption(item))
   const [saving, setSaving] = useState(false)
+  const [showAutoHelp, setShowAutoHelp] = useState(false)
 
   useEffect(() => {
-    if (open) setForm(initConsumption(item))
+    if (open) { setForm(initConsumption(item)); setShowAutoHelp(false) }
   }, [open, item])
 
   const setField = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -477,33 +514,33 @@ function ConsumptionModal({ open, item, onClose, onUpdate }) {
   const onAuto = () => {
     const auto = calcDailyUsage(item.name, family)
     if (auto == null) {
-      toast('이 상품은 자동계산 데이터가 없어요')
+      toast('자동계산 데이터가 없어요')
       return
     }
-    setForm((f) => ({ ...f, daily_usage: String(auto) }))
-    toast(`✨ ${formatPeople(people)}인 기준으로 자동 계산됨`)
+    const days = Math.max(1, Math.round(1 / auto))
+    setForm((f) => ({ ...f, days_per_one: String(days) }))
   }
-
-  const expDays = useMemo(() => {
-    const du = parseFloat(form.daily_usage)
-    if (!du || du <= 0) return null
-    return Math.round(1 / du)
-  }, [form.daily_usage])
-
-  const hasBaseline = !!getBaselineDays(item.name)
 
   const handleSave = async () => {
     setSaving(true)
     try {
+      const n = parseInt(form.days_per_one, 10)
       await onUpdate(item, {
-        daily_usage: form.daily_usage ? Number(form.daily_usage) : null,
+        daily_usage: !isNaN(n) && n > 0 ? 1 / n : null,
         reorder_point: form.reorder_point ? Number(form.reorder_point) : null,
       })
-      toast('✅ 소비 속도가 수정됐어요')
+      toast('✅ 저장됨')
       onClose()
     } catch {} finally {
       setSaving(false)
     }
+  }
+
+  const suffix = {
+    display: 'flex', alignItems: 'center',
+    padding: '0 4px',
+    fontSize: 14, fontWeight: 700, color: 'var(--text-sub)',
+    flexShrink: 0,
   }
 
   return (
@@ -513,88 +550,85 @@ function ConsumptionModal({ open, item, onClose, onUpdate }) {
       title="소비 속도 수정"
       actions={
         <>
-          <button
-            type="button"
-            className="btn secondary"
-            onClick={onClose}
-            disabled={saving}
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={handleSave}
-            disabled={saving}
-          >
+          <button type="button" className="btn secondary" onClick={onClose} disabled={saving}>취소</button>
+          <button type="button" className="btn" onClick={handleSave} disabled={saving}>
             {saving ? '저장중…' : '저장'}
           </button>
         </>
       }
     >
       <div className="form-field">
-        <label className="label">일일 소비량</label>
+        <label className="label">소비 주기</label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             type="number"
-            inputMode="decimal"
-            step="any"
-            value={form.daily_usage}
-            onChange={setField('daily_usage')}
-            placeholder="0.5 (하루 반)"
+            inputMode="numeric"
+            min="1"
+            step="1"
+            value={form.days_per_one}
+            onChange={setField('days_per_one')}
+            placeholder="7"
             style={{ flex: 1 }}
           />
+          <div style={suffix}>일에 1개</div>
           <button
             type="button"
             className="btn tonal"
             onClick={onAuto}
-            style={{
-              padding: '0 14px',
-              fontSize: 13,
-              borderRadius: 14,
-              flexShrink: 0,
-            }}
+            style={{ padding: '0 14px', fontSize: 13, borderRadius: 14, flexShrink: 0 }}
           >
-            자동계산
+            자동
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowAutoHelp((v) => !v)}
+            aria-label="자동 버튼 설명"
+            className="auto-help-btn"
+          >
+            ?
           </button>
         </div>
-        {expDays != null && (
-          <div className="form-hint">
-            👨‍👩‍👧 {formatPeople(people)}인 기준 약 {expDays}일 소비 예상
-          </div>
-        )}
-        {!hasBaseline && (
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: 11,
-              color: 'var(--text-hint)',
-              fontWeight: 500,
-            }}
-          >
-            ※ 자동계산 데이터가 없는 품목은 직접 입력해주세요
+        {showAutoHelp && (
+          <div className="auto-help">
+            <strong>🧠 자동 버튼이란?</strong>
+            우리 집 가족 수에 맞춰 예상 소비 주기를 계산해 채워줍니다.
+            <ul>
+              <li>품목별 기준 (예: 화장지 60일, 샴푸 30일 — 성인 1명 기준)</li>
+              <li>유효 인원 = 성인 + 어린이 × 0.7</li>
+              <li>결과 = 기준 일수 ÷ 유효 인원</li>
+            </ul>
+            가족 정보는 <b>설정 &gt; 가족 구성</b>에서 바꿀 수 있어요.
           </div>
         )}
       </div>
 
       <div className="form-field" style={{ marginBottom: 0 }}>
-        <label className="label">재주문 시점 (며칠치 남았을 때)</label>
-        <input
-          type="number"
-          inputMode="decimal"
-          step="any"
-          value={form.reorder_point}
-          onChange={setField('reorder_point')}
-          placeholder="7"
-        />
+        <label className="label">재주문 알림</label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            step="1"
+            value={form.reorder_point}
+            onChange={setField('reorder_point')}
+            placeholder="7"
+            style={{ flex: 1 }}
+          />
+          <div style={suffix}>일 남으면</div>
+        </div>
       </div>
     </Modal>
   )
 }
 
 function initConsumption(item) {
+  let daysPerOne = ''
+  if (item.daily_usage != null && item.daily_usage > 0) {
+    daysPerOne = String(Math.max(1, Math.round(1 / item.daily_usage)))
+  }
   return {
-    daily_usage: item.daily_usage != null ? String(item.daily_usage) : '',
+    days_per_one: daysPerOne,
     reorder_point: item.reorder_point != null ? String(item.reorder_point) : '',
   }
 }

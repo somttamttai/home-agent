@@ -15,8 +15,8 @@ export default function BottomSheet({ open, onClose, title, children }) {
 
   return (
     <>
-      <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" role="dialog" aria-modal="true">
+      <div className="sheet-backdrop fade-in" onClick={onClose} />
+      <div className="sheet sheet-enter" role="dialog" aria-modal="true">
         <div className="sheet-handle" />
         {title && <div className="sheet-title">{title}</div>}
         <div className="sheet-body">{children}</div>

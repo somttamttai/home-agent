@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme.js'
 import { useConsumables } from '../hooks/useConsumables.jsx'
 import { useCategories } from '../hooks/useCategories.jsx'
+import { useNotifications } from '../hooks/useNotifications.js'
 import Modal from '../components/Modal.jsx'
 import BottomSheet from '../components/BottomSheet.jsx'
 import PurchaseCompleteModal from '../components/PurchaseCompleteModal.jsx'
 import EarlyPurchaseModal from '../components/EarlyPurchaseModal.jsx'
 import { useToast } from '../components/Toast.jsx'
-import { useAuth } from '../hooks/useAuth.jsx'
 
 const EMOJI_PICKS = ['🛁','🍳','🧺','🧹','🛏','👔','🍼','💊','🐾','🚗','🏋️','📚','🎮','🐶','🧴','🪥','🧽','🧤','🌸','☕']
 
@@ -84,10 +84,10 @@ function CategoryModal({ open, onClose, onSave, initial }) {
 export default function Home() {
   const nav = useNavigate()
   const { theme, toggle } = useTheme()
-  const { items, loading, error, reload, onRefresh, onStockChange, onUpdate } = useConsumables()
+  const { items, loading, error, reload, onRefresh, onStockChange } = useConsumables()
   const { categories, getIcon, customCategories, addCategory, updateCategory, deleteCategory } = useCategories()
+  const { notifications: deals, markRead } = useNotifications()
   const toast = useToast()
-  const { authHeaders } = useAuth()
 
   const [addCatOpen, setAddCatOpen] = useState(false)
   const [editCat, setEditCat] = useState(null)
@@ -112,54 +112,14 @@ export default function Home() {
     return () => window.removeEventListener('focus', handleFocus)
   }, [])
 
-  // 조기구매 감지
-  const checkEarlyPurchase = useCallback(async (results) => {
-    if (!results || results.length === 0) return
-    const detections = []
-    for (const { item, purchase, qty } of results) {
-      try {
-        const r = await fetch(`/api/purchases/${item.id}`, { headers: authHeaders() })
-        if (!r.ok) continue
-        const data = await r.json()
-        if (data.stats.total_purchases < 3) continue
-        const avgInterval = data.stats.avg_interval_days
-        if (!avgInterval) continue
-
-        // 현재 구매까지의 간격 계산
-        const sorted = [...data.history].sort(
-          (a, b) => new Date(b.purchased_at) - new Date(a.purchased_at),
-        )
-        if (sorted.length < 2) continue
-        const latest = new Date(sorted[0].purchased_at)
-        const prev = new Date(sorted[1].purchased_at)
-        const actualInterval = (latest - prev) / (1000 * 60 * 60 * 24)
-
-        // 평균보다 2배 이상 일찍 구매했으면 감지
-        if (actualInterval < avgInterval / 2) {
-          detections.push({
-            item,
-            purchase,
-            avgInterval: Math.round(avgInterval),
-            actualInterval: Math.round(actualInterval),
-          })
-        }
-      } catch {}
-    }
-    if (detections.length > 0) {
+  // PurchaseCompleteModal에서 돌려준 detections를 그대로 사용
+  // 감지/판정은 모두 백엔드(api/_lib/logic.js)에서 처리
+  const handlePurchaseClose = useCallback((detections) => {
+    setPurchaseModalOpen(false)
+    if (Array.isArray(detections) && detections.length > 0) {
       setEarlyDetections(detections)
     }
-  }, [authHeaders])
-
-  const handlePurchaseClose = useCallback((results) => {
-    setPurchaseModalOpen(false)
-    if (results && results.length > 0) {
-      checkEarlyPurchase(results)
-    }
-  }, [checkEarlyPurchase])
-
-  const handleEarlyUpdate = useCallback(async (item, _newStock, patch) => {
-    if (patch) await onUpdate(item, patch)
-  }, [onUpdate])
+  }, [])
 
   useEffect(() => {
     if (!('Notification' in window)) return
@@ -187,10 +147,13 @@ export default function Home() {
     const c = {}
     for (const cat of catKeys) c[cat] = { total: 0, low: 0 }
     for (const it of items) {
-      const cat = it.category || '기타'
-      if (!c[cat]) c[cat] = { total: 0, low: 0 }
-      c[cat].total += 1
-      if (it.need_reorder) c[cat].low += 1
+      const cats = new Set([it.category || '기타'])
+      for (const lc of (it.linked_categories || [])) cats.add(lc)
+      for (const cat of cats) {
+        if (!c[cat]) c[cat] = { total: 0, low: 0 }
+        c[cat].total += 1
+        if (it.need_reorder) c[cat].low += 1
+      }
     }
     return c
   }, [items, catKeys])
@@ -257,7 +220,7 @@ export default function Home() {
   }
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="home-header">
         <div className="greet-wrap">
           <div className="greet">{greeting()} 👋</div>
@@ -314,7 +277,7 @@ export default function Home() {
                       const cls = ddayClass(it.days_left)
                       const catName = it.category || '기타'
                       return (
-                        <button key={it.id} type="button" className={`urgent-chip ${cls}`}
+                        <button key={it.id} type="button" className={`urgent-chip tap-btn ${cls}`}
                           onClick={() => onRefresh(it)}>
                           <div className="urgent-chip-name">{it.name}</div>
                           <div className="urgent-chip-dday">{formatDday(it.days_left)}</div>
@@ -323,7 +286,7 @@ export default function Home() {
                       )
                     })}
                     {low.length > 3 && (
-                      <button type="button" className="urgent-chip more"
+                      <button type="button" className="urgent-chip more tap-btn"
                         onClick={() => setUrgentExpanded(true)}>
                         <div className="urgent-chip-dday">+{low.length - 3}</div>
                         <div className="urgent-chip-name">더보기</div>
@@ -336,7 +299,7 @@ export default function Home() {
                       const cls = ddayClass(it.days_left)
                       const catName = it.category || '기타'
                       return (
-                        <button key={it.id} type="button" className={`urgent-chip ${cls}`}
+                        <button key={it.id} type="button" className={`urgent-chip tap-btn ${cls}`}
                           onClick={() => onRefresh(it)}>
                           <div className="urgent-chip-name">{it.name}</div>
                           <div className="urgent-chip-dday">{formatDday(it.days_left)}</div>
@@ -344,7 +307,7 @@ export default function Home() {
                         </button>
                       )
                     })}
-                    <button type="button" className="urgent-chip more"
+                    <button type="button" className="urgent-chip more tap-btn"
                       onClick={() => setUrgentExpanded(false)}>
                       <div className="urgent-chip-name">접기</div>
                     </button>
@@ -353,7 +316,38 @@ export default function Home() {
               </>
             )}
 
-            <div className="section-title" style={low.length > 0 ? {} : { paddingTop: 0 }}>전체 현황</div>
+            {deals.length > 0 && (
+              <>
+                <div className="urgent-section-title">💰 지금 사면 이득이에요</div>
+                <div className="urgent-chips-scroll">
+                  {deals.map((d) => {
+                    const isLowest = d.type === 'lowest_price'
+                    const discount = d.meta?.discount_pct
+                    const item = items.find((i) => i.id === d.consumable_id)
+                    return (
+                      <button key={d.id} type="button"
+                        className={`deal-chip tap-btn ${isLowest ? 'lowest' : ''}`}
+                        onClick={() => {
+                          markRead(d.id)
+                          if (item) onRefresh(item)
+                        }}>
+                        <div className="deal-chip-name">{item?.name || '상품'}</div>
+                        <div className="deal-chip-tag">
+                          {isLowest ? '역대 최저' : `-${discount}%`}
+                        </div>
+                        {d.meta?.price && (
+                          <div className="deal-chip-price">
+                            {Number(d.meta.price).toLocaleString()}원
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            <div className="section-title" style={low.length > 0 || deals.length > 0 ? {} : { paddingTop: 0 }}>전체 현황</div>
             <div className="summary-card">
               <div className="label">관리 중인 소모품</div>
               <div className="big">{items.length}<span className="unit">개</span></div>
@@ -372,7 +366,7 @@ export default function Home() {
                 const go = () => nav(`/category/${encodeURIComponent(cat)}`)
                 return (
                   <div key={cat} role="button" tabIndex={0}
-                    className={`category-grid-card ${hasLow ? 'has-low' : ''}`}
+                    className={`category-grid-card tap-card ${hasLow ? 'has-low' : ''}`}
                     onClick={go}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go() } }}>
                     <div className="icon">{getIcon(cat)}</div>
@@ -392,7 +386,7 @@ export default function Home() {
                   </div>
                 )
               })}
-              <button type="button" className="category-grid-card add-card"
+              <button type="button" className="category-grid-card add-card tap-card"
                 onClick={() => setAddCatOpen(true)}>
                 <div className="icon">＋</div>
                 <div className="name">추가</div>
@@ -496,7 +490,6 @@ export default function Home() {
         open={earlyDetections.length > 0}
         onClose={() => setEarlyDetections([])}
         detections={earlyDetections}
-        onStockChange={handleEarlyUpdate}
       />
     </div>
   )

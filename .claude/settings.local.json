@@ -34,7 +34,8 @@
       "Bash(curl *)",
       "Bash(taskkill //F //IM \"node.exe\")",
       "Bash(netstat -ano)",
-      "Bash(taskkill *)"
+      "Bash(taskkill *)",
+      "Bash(awk '/^  return \\\\\\($/,/^    <div/ { print NR\": \"$0 }' C:/Users/박상민/home-agent/frontend/src/pages/__TRACKED_VAR__.jsx)"
     ]
   }
 }

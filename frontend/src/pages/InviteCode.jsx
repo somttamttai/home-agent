@@ -58,7 +58,7 @@ export default function InviteCode() {
   }
 
   return (
-    <div>
+    <div className="page-enter">
       <PageHeader title="초대코드" />
       <div className="page">
         <div className="card" style={{ textAlign: 'center', padding: '32px 20px' }}>

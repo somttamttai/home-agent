@@ -488,7 +488,7 @@ export default function Onboarding() {
   const isDone = step === doneStep
 
   return (
-    <div className="ob-page">
+    <div className="ob-page page-enter">
       <StepNav step={step} doneStep={doneStep} categories={categories} />
 
       <div className="ob-body">

@@ -8,11 +8,27 @@ export default async function handler(req, res) {
     const { path, query } = parseUrl(req);
     const method = req.method;
 
-    // /api/prices/compare?query=...&ply=...
+    // /api/prices/compare?query=...&ply=...&size=min-max&consumable_id=...
     if (path === '/api/prices/compare' && method === 'GET') {
       const plyRaw = query.ply ? parseInt(query.ply, 10) : null;
       const ply = (plyRaw != null && !Number.isNaN(plyRaw) && plyRaw > 0) ? plyRaw : null;
-      return await logic.comparePrices(query.query, ply);
+
+      let sizeMin = null;
+      let sizeMax = null;
+      if (query.size) {
+        const [minS, maxS] = String(query.size).split('-');
+        const minP = parseFloat(minS);
+        const maxP = parseFloat(maxS);
+        if (!Number.isNaN(minP) && minP > 0) sizeMin = minP;
+        if (!Number.isNaN(maxP) && maxP > 0) sizeMax = maxP;
+      }
+
+      const cidRaw = query.consumable_id ? parseInt(query.consumable_id, 10) : null;
+      const cid = (cidRaw != null && !Number.isNaN(cidRaw)) ? cidRaw : null;
+      if (cid != null) {
+        return await logic.comparePricesWithContext(query.query, ply, cid, sizeMin, sizeMax);
+      }
+      return await logic.comparePrices(query.query, ply, sizeMin, sizeMax);
     }
 
     // /api/prices/history/{cid}?limit=...

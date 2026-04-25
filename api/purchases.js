@@ -22,6 +22,13 @@ export default async function handler(req, res) {
     const prefix = '/api/purchases/';
     if (path.startsWith(prefix)) {
       const tail = path.slice(prefix.length);
+      // /api/purchases/{id}/classify — 조기구매 팝업 응답
+      if (tail.endsWith('/classify') && method === 'POST') {
+        const id = parseInt(tail.slice(0, -'/classify'.length), 10);
+        if (Number.isNaN(id)) throw new BadRequest('invalid id');
+        const body = readBody(req);
+        return await logic.classifyEarlyPurchase(id, body.choice);
+      }
       if (tail.includes('/')) throw new NotFound(`no route: ${method} ${path}`);
       const id = parseInt(tail, 10);
       if (Number.isNaN(id)) throw new BadRequest('invalid id');

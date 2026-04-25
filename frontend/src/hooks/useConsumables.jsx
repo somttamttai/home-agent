@@ -20,8 +20,9 @@ export function ConsumablesProvider({ children }) {
     ...authHeaders(),
   }), [authHeaders])
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (opts = {}) => {
+    const silent = !!opts.silent
+    if (!silent) setLoading(true)
     try {
       const r = await fetch('/api/consumables', { headers: authHeaders() })
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
@@ -30,7 +31,7 @@ export function ConsumablesProvider({ children }) {
     } catch (e) {
       setError(e.message)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [authHeaders])
 
@@ -46,7 +47,7 @@ export function ConsumablesProvider({ children }) {
   useEffect(() => { load(); loadBrands() }, [load, loadBrands])
 
   useRealtime('consumables', householdId, useCallback(() => {
-    load()
+    load({ silent: true })
   }, [load]))
 
   const onStockChange = useCallback(async (item, nextStock) => {
@@ -64,7 +65,7 @@ export function ConsumablesProvider({ children }) {
       setItems((list) => list.map((i) => (i.id === item.id ? updated : i)))
     } catch (e) {
       toast(`❌ 저장 실패: ${e.message}`)
-      load()
+      load({ silent: true })
     }
   }, [toast, load, hdrs])
 
@@ -84,7 +85,7 @@ export function ConsumablesProvider({ children }) {
       return updated
     } catch (e) {
       toast(`❌ 저장 실패: ${e.message}`)
-      load()
+      load({ silent: true })
       throw e
     }
   }, [toast, load, hdrs])
@@ -113,6 +114,7 @@ export function ConsumablesProvider({ children }) {
     const preferred = getPreferredBrand(name)
 
     const params = new URLSearchParams({ query: name })
+    if (item.id) params.set('consumable_id', String(item.id))
     if (preferred) params.set('brand', preferred)
     if (item.spec && /(\d)\s*겹/.test(item.spec)) {
       params.set('ply', item.spec.match(/(\d)\s*겹/)[1])

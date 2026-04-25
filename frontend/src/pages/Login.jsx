@@ -4,7 +4,7 @@ export default function Login() {
   const { signInWithGoogle, signInWithKakao } = useAuth()
 
   return (
-    <div className="login-page">
+    <div className="login-page page-enter">
       <div className="login-content">
         <div className="login-logo">🏠</div>
         <h1 className="login-title">home-agent</h1>

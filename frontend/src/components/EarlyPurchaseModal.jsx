@@ -3,7 +3,8 @@ import Modal from './Modal.jsx'
 import { useToast } from './Toast.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 
-export default function EarlyPurchaseModal({ open, onClose, detections, onStockChange }) {
+// detections: [{ purchaseId, item, daysLeft }]
+export default function EarlyPurchaseModal({ open, onClose, detections }) {
   const toast = useToast()
   const { authHeaders } = useAuth()
   const [current, setCurrent] = useState(0)
@@ -17,23 +18,13 @@ export default function EarlyPurchaseModal({ open, onClose, detections, onStockC
   const handleChoice = async (choice) => {
     setSaving(true)
     try {
-      // choice: 'event' | 'early' | 'normal'
-      if (det.purchase?.id) {
-        await fetch(`/api/purchases/${det.purchase.id}`, {
-          method: 'PATCH',
+      if (det.purchaseId) {
+        await fetch(`/api/purchases/${det.purchaseId}/classify`, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json', ...authHeaders() },
-          body: JSON.stringify({ purchase_type: choice }),
+          body: JSON.stringify({ choice }),
         })
       }
-
-      // 'early' -> daily_usage 10% 상향
-      if (choice === 'early' && det.item) {
-        const newUsage = Math.round(Number(det.item.daily_usage) * 1.1 * 10000) / 10000
-        await onStockChange?.(det.item, undefined, { daily_usage: newUsage })
-        toast(`"${det.item.name}" 소비 속도가 10% 상향됐어요`)
-      }
-
-      // 다음 감지 항목으로
       if (current < detections.length - 1) {
         setCurrent((c) => c + 1)
       } else {
@@ -48,38 +39,29 @@ export default function EarlyPurchaseModal({ open, onClose, detections, onStockC
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="조기 구매 감지">
+    <Modal open={open} onClose={onClose} title="일찍 구매하셨네요">
       <div className="early-purchase-body">
         <div className="early-purchase-msg">
-          "{det.item.name}"을(를) 예상보다 일찍 구매하셨네요!
+          "{det.item.name}"이(가) 아직 <strong>{Math.round(det.daysLeft)}일치</strong> 남아있어요!
         </div>
         <div className="early-purchase-detail">
-          평균 {det.avgInterval}일 간격 → 이번 {det.actualInterval}일 만에 구매
+          이유가 뭔가요?
         </div>
         <div className="early-purchase-options">
-          <button
-            type="button"
-            className="btn tonal block"
+          <button type="button" className="btn tonal block tap-btn"
             disabled={saving}
-            onClick={() => handleChoice('event')}
-          >
-            손님/이벤트가 있었어요
+            onClick={() => handleChoice('event')}>
+            🎉 손님/이벤트가 있었어요
           </button>
-          <button
-            type="button"
-            className="btn tonal block"
+          <button type="button" className="btn tonal block tap-btn"
             disabled={saving}
-            onClick={() => handleChoice('early')}
-          >
-            평소보다 많이 썼어요
+            onClick={() => handleChoice('sale')}>
+            💰 세일해서 미리 샀어요
           </button>
-          <button
-            type="button"
-            className="btn tonal block"
+          <button type="button" className="btn tonal block tap-btn"
             disabled={saving}
-            onClick={() => handleChoice('normal')}
-          >
-            그냥 미리 샀어요
+            onClick={() => handleChoice('early')}>
+            🛒 그냥 미리 샀어요
           </button>
         </div>
         {detections.length > 1 && (

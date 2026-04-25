@@ -5,12 +5,57 @@ import { useToast } from '../components/Toast.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { buildSearchQuery } from '../utils/brands.js'
 
-const PLY_TABS = [
-  { label: '전체', value: '' },
-  { label: '1겹',  value: '1' },
-  { label: '2겹',  value: '2' },
-  { label: '3겹',  value: '3' },
-]
+const FILTER_PRESETS = {
+  m: {
+    type: 'ply',
+    tabs: [
+      { label: '전체',  value: '' },
+      { label: '1겹',   value: '1' },
+      { label: '2겹',   value: '2' },
+      { label: '3겹',   value: '3' },
+    ],
+  },
+  ml: {
+    type: 'size',
+    tabs: [
+      { label: '전체',       value: '' },
+      { label: '500ml↓',     value: '0-500' },
+      { label: '500ml~1L',   value: '500-1000' },
+      { label: '1L↑',        value: '1000-' },
+    ],
+  },
+  g: {
+    type: 'size',
+    tabs: [
+      { label: '전체',     value: '' },
+      { label: '100g↓',    value: '0-100' },
+      { label: '100~200g', value: '100-200' },
+      { label: '200g↑',    value: '200-' },
+    ],
+  },
+  '매': {
+    type: 'size',
+    tabs: [
+      { label: '전체',      value: '' },
+      { label: '50매↓',     value: '0-50' },
+      { label: '50~100매',  value: '50-100' },
+      { label: '100매↑',    value: '100-' },
+    ],
+  },
+}
+
+function detectUnitFromQuery(text) {
+  if (!text) return null
+  if (/화장지|키친타올|두루마리|롤휴지/.test(text)) return 'm'
+  if (/샴푸|린스|바디워시|세제|섬유유연제|컨디셔너|핸드워시/.test(text)) return 'ml'
+  if (/치약|세안제|폼클렌징/.test(text)) return 'g'
+  if (/지퍼백|봉투|청소포|물티슈|드라이시트|마스크/.test(text)) return '매'
+  if (/(\d)\s*겹|롤/.test(text)) return 'm'
+  if (/\d+\s*(ml|mL|L)\b/i.test(text)) return 'ml'
+  if (/\d+\s*(g|kg)\b/i.test(text)) return 'g'
+  if (/\d+\s*매/.test(text)) return '매'
+  return null
+}
 
 function specSummary(item) {
   if (!item) return ''
@@ -50,13 +95,14 @@ export default function PriceCompare() {
   const [brandsMap, setBrandsMap] = useState({})
 
   const [query, setQuery] = useState(sp.get('query') || '크리넥스 3겹 30m')
-  const [ply, setPly] = useState(sp.get('ply') || '')
+  const [filterValue, setFilterValue] = useState(sp.get('ply') || sp.get('size') || '')
   const [brand, setBrand] = useState(sp.get('brand') || '')
+  const consumableId = sp.get('consumable_id')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const runSearch = useCallback(async (q, p, b) => {
+  const runSearch = useCallback(async (q, fv, b) => {
     if (!q || q.trim().length < 2) {
       toast('검색어를 입력해주세요')
       return
@@ -66,7 +112,10 @@ export default function PriceCompare() {
     try {
       const fullQuery = buildSearchQuery(q, b)
       const params = new URLSearchParams({ query: fullQuery })
-      if (p) params.set('ply', p)
+      const unit = detectUnitFromQuery(q)
+      const preset = unit ? FILTER_PRESETS[unit] : null
+      if (preset && fv) params.set(preset.type, fv)
+      if (consumableId) params.set('consumable_id', consumableId)
       const r = await fetch(`/api/prices/compare?${params}`)
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setData(await r.json())
@@ -76,7 +125,7 @@ export default function PriceCompare() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, consumableId])
 
   useEffect(() => {
     fetch('/api/brands', { headers: authHeaders() })
@@ -88,33 +137,49 @@ export default function PriceCompare() {
   useEffect(() => {
     const urlQuery = sp.get('query')
     if (urlQuery) {
-      const urlPly = sp.get('ply') || ''
+      const urlFilter = sp.get('ply') || sp.get('size') || ''
       const urlBrand = sp.get('brand') || ''
       setQuery(urlQuery)
-      setPly(urlPly)
+      setFilterValue(urlFilter)
       setBrand(urlBrand)
-      runSearch(urlQuery, urlPly, urlBrand)
+      runSearch(urlQuery, urlFilter, urlBrand)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const writeUrl = (q, p, b) => {
+  const detectedUnit = useMemo(
+    () => detectUnitFromQuery(query) || data?.items?.[0]?.unit || null,
+    [query, data]
+  )
+  const preset = detectedUnit ? FILTER_PRESETS[detectedUnit] : null
+  const activeFilterLabel = useMemo(() => {
+    if (!preset || !filterValue) return null
+    return preset.tabs.find((t) => t.value === filterValue)?.label || null
+  }, [preset, filterValue])
+
+  const writeUrl = (q, fv, b) => {
     const next = new URLSearchParams()
     next.set('query', q)
-    if (p) next.set('ply', p)
+    const unit = detectUnitFromQuery(q)
+    const p = unit ? FILTER_PRESETS[unit] : null
+    if (p && fv) next.set(p.type, fv)
     if (b) next.set('brand', b)
     setSp(next, { replace: true })
   }
 
   const onSearch = (e) => {
     e?.preventDefault()
+    const newUnit = detectUnitFromQuery(query)
+    const prevUnit = detectUnitFromQuery(sp.get('query') || '')
+    const nextFilter = (newUnit !== prevUnit) ? '' : filterValue
+    if (nextFilter !== filterValue) setFilterValue(nextFilter)
     setBrand('')
-    writeUrl(query, ply, '')
-    runSearch(query, ply, '')
+    writeUrl(query, nextFilter, '')
+    runSearch(query, nextFilter, '')
   }
 
-  const onPlyTab = (value) => {
-    setPly(value)
+  const onFilterTab = (value) => {
+    setFilterValue(value)
     writeUrl(query, value, brand)
     if (data) runSearch(query, value, brand)
   }
@@ -123,8 +188,8 @@ export default function PriceCompare() {
 
   const onShowAllBrands = () => {
     setBrand('')
-    writeUrl(query, ply, '')
-    runSearch(query, ply, '')
+    writeUrl(query, filterValue, '')
+    runSearch(query, filterValue, '')
   }
 
   const onShowMyBrand = () => {
@@ -133,8 +198,8 @@ export default function PriceCompare() {
       return
     }
     setBrand(myBrand)
-    writeUrl(query, ply, myBrand)
-    runSearch(query, ply, myBrand)
+    writeUrl(query, filterValue, myBrand)
+    runSearch(query, filterValue, myBrand)
   }
 
   const onAddToStock = () => {
@@ -148,7 +213,7 @@ export default function PriceCompare() {
   }
 
   return (
-    <div>
+    <div className="page-enter">
       <PageHeader title="가격비교" />
       <div className="page">
         <form onSubmit={onSearch} className="search-wrap">
@@ -158,18 +223,20 @@ export default function PriceCompare() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="예: 크리넥스 3겹 30m"
           />
-          <div className="ply-tabs">
-            {PLY_TABS.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                className={`ply-tab ${ply === t.value ? 'active' : ''}`}
-                onClick={() => onPlyTab(t.value)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          {preset && (
+            <div className="ply-tabs">
+              {preset.tabs.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  className={`ply-tab ${filterValue === t.value ? 'active' : ''}`}
+                  onClick={() => onFilterTab(t.value)}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          )}
         </form>
 
         {loading && (
@@ -202,8 +269,26 @@ export default function PriceCompare() {
               <div className="q">{query}</div>
               <div className="stats">
                 총 {data.total}건 · 배송비 포함 총합 순 ({data.valid}건)
-                {ply && ` · ${ply}겹 필터`}
+                {activeFilterLabel && ` · ${activeFilterLabel} 필터`}
               </div>
+              {data.avg_30d != null && data.cheapest && (() => {
+                const now = data.cheapest.price
+                const diffPct = Math.round(((data.avg_30d - now) / data.avg_30d) * 100)
+                const cheaper = diffPct > 0
+                return (
+                  <div className="avg-price-row">
+                    <div className="avg-label">
+                      30일 평균 <strong>{data.avg_30d.toLocaleString()}원</strong>
+                      {data.min_ever != null && (
+                        <span className="avg-min"> · 역대 최저 {data.min_ever.toLocaleString()}원</span>
+                      )}
+                    </div>
+                    <div className={`avg-diff ${cheaper ? 'cheaper' : 'pricier'}`}>
+                      {cheaper ? `-${diffPct}% 저렴` : diffPct === 0 ? '평균과 동일' : `+${-diffPct}% 비쌈`}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
 
             {brand ? (
@@ -297,7 +382,7 @@ export default function PriceCompare() {
               <div className="empty">
                 <div className="big-icon">🔍</div>
                 <div className="title">검색 결과가 없어요</div>
-                {ply && <div>다른 겹수로 검색해보세요</div>}
+                {filterValue && <div>다른 옵션으로 검색해보세요</div>}
               </div>
             )}
           </>

@@ -92,7 +92,7 @@ export default function PurchaseCompleteModal({ open, onClose, items, onStockCha
       return
     }
     setSaving(true)
-    const results = []
+    const earlyDetections = []
     try {
       for (const item of sorted) {
         if (!checked[item.id]) continue
@@ -102,12 +102,11 @@ export default function PurchaseCompleteModal({ open, onClose, items, onStockCha
         // 재고 업데이트
         await onStockChange(item, newStock)
 
-        // purchase_history 저장
+        // purchase_history 저장 — days_before_depletion 은 백엔드가 자동 계산
         const purchaseBody = {
           consumable_id: item.id,
           quantity: qty,
           purchase_type: 'normal',
-          days_before_depletion: item.days_left,
         }
         const r = await fetch('/api/purchases', {
           method: 'POST',
@@ -115,12 +114,19 @@ export default function PurchaseCompleteModal({ open, onClose, items, onStockCha
           body: JSON.stringify(purchaseBody),
         })
         if (r.ok) {
-          const purchase = await r.json()
-          results.push({ item, purchase, qty })
+          const data = await r.json()
+          // 백엔드 판정: 일찍 구매면 팝업 트리거
+          if (data?.early && data?.saved?.id) {
+            earlyDetections.push({
+              purchaseId: data.saved.id,
+              item,
+              daysLeft: data.early.days_left,
+            })
+          }
         }
       }
-      toast(`${results.length}개 상품 재고가 업데이트됐어요`)
-      onClose(results)
+      toast(`구매 내역이 기록됐어요`)
+      onClose(earlyDetections)
     } catch (e) {
       toast(`일부 저장 실패: ${e.message}`)
     } finally {

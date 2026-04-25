@@ -25,7 +25,11 @@ export default function CategoryDetail() {
   } = useConsumables()
 
   const filtered = useMemo(
-    () => items.filter((i) => (i.category || '기타') === decoded),
+    () => items.filter((i) => {
+      if ((i.category || '기타') === decoded) return true
+      const linked = Array.isArray(i.linked_categories) ? i.linked_categories : []
+      return linked.includes(decoded)
+    }),
     [items, decoded],
   )
   const low = filtered.filter((i) => i.need_reorder)
@@ -67,7 +71,7 @@ export default function CategoryDetail() {
   }
 
   return (
-    <div>
+    <div className="page-enter">
       <PageHeader title={`${icon} ${decoded}`}>
         {isCustom && (
           <button type="button" className="more-btn header-more"

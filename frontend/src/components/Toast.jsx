@@ -11,7 +11,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastCtx.Provider value={show}>
       {children}
-      {msg && <div className="toast">{msg}</div>}
+      {msg && <div className="toast toast-enter">{msg}</div>}
     </ToastCtx.Provider>
   )
 }

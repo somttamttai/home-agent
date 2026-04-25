@@ -11,7 +11,7 @@ export default function Scan() {
   const onLocked = () => toast('🔒 곧 업데이트 예정이에요')
 
   return (
-    <div>
+    <div className="page-enter">
       <PageHeader title="바코드 스캔" />
       <div className="page">
         <div className="card lock-card">

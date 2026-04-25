@@ -16,7 +16,11 @@ export function AuthProvider({ children }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s)
+      // 같은 토큰 재통지는 무시 (Supabase가 포커스마다 fire하는 중복 이벤트 방지)
+      setSession((prev) => {
+        if (prev?.access_token === s?.access_token) return prev
+        return s
+      })
       if (s) fetchHousehold(s)
       else {
         setHousehold(null)
@@ -27,10 +31,12 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // access_token 문자열에만 의존하도록 좁힘 — 세션 객체 재생성되어도 token 같으면 동일 레퍼런스 유지
+  const accessToken = session?.access_token || null
   const authHeaders = useCallback(() => {
-    if (!session?.access_token) return {}
-    return { Authorization: `Bearer ${session.access_token}` }
-  }, [session])
+    if (!accessToken) return {}
+    return { Authorization: `Bearer ${accessToken}` }
+  }, [accessToken])
 
   const fetchHousehold = useCallback(async (s) => {
     try {

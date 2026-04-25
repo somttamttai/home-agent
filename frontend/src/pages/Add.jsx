@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
+import Modal from '../components/Modal.jsx'
 import { useToast } from '../components/Toast.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useCategories } from '../hooks/useCategories.jsx'
+import { useConsumables } from '../hooks/useConsumables.jsx'
 import { calcDailyUsage, expectedDays, getBaselineDays } from '../utils/consumption.js'
 import { effectivePeople, formatPeople } from '../utils/family.js'
 
@@ -38,8 +40,10 @@ function ManualForm({ initial, onSaved }) {
   const toast = useToast()
   const { authHeaders } = useAuth()
   const { categoryKeys, templateGroups, family: famData } = useCategories()
+  const { items, onUpdate } = useConsumables()
   const [form, setForm] = useState(initial)
   const [saving, setSaving] = useState(false)
+  const [dupe, setDupe] = useState(null) // { existing, newCategory } | null
 
   const family = { adults: famData.adults, children: famData.children }
   const people = effectivePeople(family)
@@ -70,23 +74,31 @@ function ManualForm({ initial, onSaved }) {
     return expectedDays(form.name, family)
   }, [form.name, family])
 
-  const onSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.name.trim()) {
-      toast('상품명을 입력해주세요')
-      return
+  const findDuplicate = (name, category) => {
+    const n = name.trim().toLowerCase()
+    if (!n) return null
+    for (const it of items) {
+      if ((it.name || '').trim().toLowerCase() !== n) continue
+      const linked = Array.isArray(it.linked_categories) ? it.linked_categories : []
+      const alreadyIn = (it.category || '기타') === category || linked.includes(category)
+      return { item: it, alreadyIn }
     }
-    const payload = {
-      name: form.name.trim(),
-      brand: form.brand.trim() || null,
-      spec: form.spec.trim() || null,
-      category: form.category || '기타',
-      max_stock: form.max_stock ? Number(form.max_stock) : null,
-      current_stock: form.current_stock ? Number(form.current_stock) : 0,
-      daily_usage: form.daily_usage ? Number(form.daily_usage) : null,
-      reorder_point: form.reorder_point ? Number(form.reorder_point) : null,
-    }
+    return null
+  }
 
+  const buildPayload = () => ({
+    name: form.name.trim(),
+    brand: form.brand.trim() || null,
+    spec: form.spec.trim() || null,
+    category: form.category || '기타',
+    max_stock: form.max_stock ? Number(form.max_stock) : null,
+    current_stock: form.current_stock ? Number(form.current_stock) : 0,
+    daily_usage: form.daily_usage ? Number(form.daily_usage) : null,
+    reorder_point: form.reorder_point ? Number(form.reorder_point) : null,
+  })
+
+  const saveNewItem = async () => {
+    const payload = buildPayload()
     setSaving(true)
     try {
       const r = await fetch('/api/consumables', {
@@ -104,8 +116,44 @@ function ManualForm({ initial, onSaved }) {
     }
   }
 
+  const linkToExisting = async () => {
+    if (!dupe) return
+    const { existing, newCategory } = dupe
+    const linked = Array.isArray(existing.linked_categories) ? existing.linked_categories : []
+    setSaving(true)
+    try {
+      await onUpdate(existing, { linked_categories: [...linked, newCategory] })
+      toast(`📋 "${existing.name}" 를 "${newCategory}" 에 연동했어요`)
+      setDupe(null)
+      onSaved()
+    } catch (err) {
+      toast(`❌ 연동 실패: ${err.message}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const onSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.name.trim()) {
+      toast('상품명을 입력해주세요')
+      return
+    }
+    const targetCat = form.category || '기타'
+    const found = findDuplicate(form.name, targetCat)
+    if (found) {
+      if (found.alreadyIn) {
+        toast(`이미 "${targetCat}"에 있는 소모품이에요`)
+        return
+      }
+      setDupe({ existing: found.item, newCategory: targetCat })
+      return
+    }
+    await saveNewItem()
+  }
+
   return (
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} className="page-enter">
       <div className="section-title" style={{ paddingTop: 0 }}>템플릿에서 빠르게 추가하기</div>
       {templateGroups.map((group) => (
         <div className="template-group" key={group.category}>
@@ -193,6 +241,39 @@ function ManualForm({ initial, onSaved }) {
           {saving ? '저장중…' : '💾 저장하기'}
         </button>
       </div>
+
+      <Modal
+        open={!!dupe}
+        onClose={() => setDupe(null)}
+        title="이미 있는 상품이에요"
+        actions={
+          <button type="button" className="btn secondary"
+            onClick={() => setDupe(null)} disabled={saving}>
+            취소
+          </button>
+        }
+      >
+        {dupe && (
+          <div className="dupe-body">
+            <div className="dupe-msg">
+              "<strong>{dupe.existing.name}</strong>"은(는) 이미
+              {' '}"<strong>{dupe.existing.category || '기타'}</strong>" 카테고리에 있어요.
+            </div>
+            <div className="dupe-actions">
+              <button type="button" className="btn block tap-btn"
+                onClick={linkToExisting} disabled={saving}>
+                📋 "{dupe.newCategory}" 에도 연동하기
+                <div className="dupe-hint">재고·소비량 공유 (한 개의 소모품으로 관리)</div>
+              </button>
+              <button type="button" className="btn secondary block tap-btn"
+                onClick={() => { setDupe(null); saveNewItem() }} disabled={saving}>
+                ➕ 별개 소모품으로 새로 추가하기
+                <div className="dupe-hint">재고 따로 관리</div>
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </form>
   )
 }

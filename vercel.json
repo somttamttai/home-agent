@@ -5,15 +5,19 @@
   "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
-    { "source": "/api/consumables/(.*)", "destination": "/api/consumables" },
-    { "source": "/api/prices/(.*)",      "destination": "/api/prices" },
-    { "source": "/api/purchases/(.*)",   "destination": "/api/purchases" },
-    { "source": "/api/scan/(.*)",        "destination": "/api/scan" },
-    { "source": "/api/auth/(.*)",        "destination": "/api/auth" },
-    { "source": "/api/family",           "destination": "/api/family" },
-    { "source": "/api/brands",           "destination": "/api/brands" },
-    { "source": "/api/categories",       "destination": "/api/categories" },
-    { "source": "/api/health",           "destination": "/api/health" },
-    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
+    { "source": "/api/consumables/(.*)",   "destination": "/api/consumables" },
+    { "source": "/api/prices/(.*)",        "destination": "/api/prices" },
+    { "source": "/api/purchases/(.*)",     "destination": "/api/purchases" },
+    { "source": "/api/notifications/(.*)", "destination": "/api/notifications" },
+    { "source": "/api/scan/(.*)",          "destination": "/api/scan" },
+    { "source": "/api/auth/(.*)",          "destination": "/api/auth" },
+    { "source": "/api/family",             "destination": "/api/family" },
+    { "source": "/api/brands",             "destination": "/api/brands" },
+    { "source": "/api/categories",         "destination": "/api/categories" },
+    { "source": "/api/health",             "destination": "/api/health" },
+    { "source": "/((?!api/|assets/).*)",   "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/price-check", "schedule": "0 9 * * *" }
   ]
 }

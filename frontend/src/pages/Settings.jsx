@@ -95,7 +95,7 @@ export default function Settings() {
     form.pets !== initial.pets
 
   return (
-    <div>
+    <div className="page-enter">
       <PageHeader title="설정" />
       <div className="page">
         {/* 집 정보 */}

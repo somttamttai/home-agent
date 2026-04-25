@@ -60,7 +60,7 @@ export default function HouseholdSetup() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page page-enter">
       <div className="login-content" style={{ maxWidth: 400 }}>
         <div className="login-logo">🏠</div>
         <h1 className="login-title" style={{ fontSize: 22 }}>우리집 설정</h1>
