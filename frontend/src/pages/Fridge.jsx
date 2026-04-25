@@ -1,7 +1,78 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '../components/Toast.jsx'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { effectivePeople, loadFamily } from '../utils/family.js'
+
+const FAV_KEY = 'fridge_favorites'
+const DEFAULT_FAVORITES = [
+  {
+    category: '🥩 육류/단백질',
+    items: [
+      { name: '계란',     emoji: '🥚', keyword: '계란' },
+      { name: '삼겹살',   emoji: '🥩', keyword: '삼겹살' },
+      { name: '닭고기',   emoji: '🍗', keyword: '닭고기' },
+      { name: '참치캔',   emoji: '🐟', keyword: '참치캔' },
+      { name: '두부',     emoji: '⬜', keyword: '두부' },
+      { name: '소시지',   emoji: '🌭', keyword: '소시지' },
+    ],
+  },
+  {
+    category: '🥬 채소',
+    items: [
+      { name: '김치',     emoji: '🥬', keyword: '김치' },
+      { name: '마늘',     emoji: '🧄', keyword: '마늘' },
+      { name: '대파',     emoji: '🌿', keyword: '대파' },
+      { name: '양파',     emoji: '🧅', keyword: '양파' },
+      { name: '감자',     emoji: '🥔', keyword: '감자' },
+      { name: '당근',     emoji: '🥕', keyword: '당근' },
+    ],
+  },
+  {
+    category: '🌾 기본식품',
+    items: [
+      { name: '쌀',       emoji: '🌾', keyword: '쌀 10kg' },
+      { name: '라면',     emoji: '🍜', keyword: '신라면' },
+      { name: '즉석밥',   emoji: '🍚', keyword: '즉석밥' },
+    ],
+  },
+  {
+    category: '🫙 양념/소스',
+    items: [
+      { name: '고추장',   emoji: '🌶️', keyword: '고추장' },
+      { name: '된장',     emoji: '🟤', keyword: '된장' },
+      { name: '간장',     emoji: '🫙', keyword: '국간장' },
+      { name: '참기름',   emoji: '🫙', keyword: '참기름' },
+      { name: '소금',     emoji: '🧂', keyword: '소금' },
+      { name: '설탕',     emoji: '🍬', keyword: '설탕' },
+      { name: '식초',     emoji: '🍶', keyword: '식초' },
+      { name: '참깨',     emoji: '🌾', keyword: '참깨' },
+      { name: '케찹',     emoji: '🍅', keyword: '케찹' },
+      { name: '마요네즈', emoji: '🫙', keyword: '마요네즈' },
+    ],
+  },
+  {
+    category: '🥛 유제품',
+    items: [
+      { name: '우유',     emoji: '🥛', keyword: '우유 1L' },
+      { name: '치즈',     emoji: '🧀', keyword: '슬라이스치즈' },
+    ],
+  },
+]
+
+function loadFavorites() {
+  try {
+    const raw = localStorage.getItem(FAV_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {}
+  return DEFAULT_FAVORITES
+}
+
+function saveFavorites(data) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(data)) } catch {}
+}
 
 const SUBTABS = [
   { id: 'fav',     label: '즐겨찾기' },
@@ -94,100 +165,206 @@ export default function Fridge() {
 // ── 즐겨찾기 ────────────────────────────────────────────────────────
 function FavoritesTab() {
   const toast = useToast()
-  const { authHeaders } = useAuth()
-  const [items, setItems] = useState(null)
+  const [data, setData] = useState(() => loadFavorites())
+  const [collapsed, setCollapsed] = useState({})
   const [adding, setAdding] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      const r = await fetch('/api/fridge-favorites', { headers: authHeaders() })
-      if (!r.ok) throw new Error()
-      const data = await r.json()
-      setItems(data.items || [])
-    } catch {
-      setItems([])
-      toast('즐겨찾기 불러오기 실패')
+  const persist = (next) => { setData(next); saveFavorites(next) }
+
+  const onAdd = ({ name, emoji, keyword, category }) => {
+    const next = data.slice()
+    let idx = next.findIndex((c) => c.category === category)
+    if (idx < 0) {
+      next.push({ category, items: [{ name, emoji, keyword }] })
+    } else {
+      next[idx] = { ...next[idx], items: [...next[idx].items, { name, emoji, keyword }] }
     }
-  }, [authHeaders, toast])
-
-  useEffect(() => { load() }, [load])
-
-  const onAdd = async (name, emoji) => {
-    try {
-      const r = await fetch('/api/fridge-favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ name, emoji }),
-      })
-      if (!r.ok) throw new Error()
-      setAdding(false)
-      load()
-    } catch { toast('추가 실패') }
+    persist(next)
+    setAdding(false)
+    toast('추가됨 ✨')
   }
 
-  const onDelete = async (id) => {
-    if (!confirm('삭제할까요?')) return
-    try {
-      const r = await fetch(`/api/fridge-favorites?id=${id}`, { method: 'DELETE', headers: authHeaders() })
-      if (!r.ok) throw new Error()
-      setItems((prev) => prev.filter((x) => x.id !== id))
-    } catch { toast('삭제 실패') }
+  const onDelete = (catIdx, itemIdx) => {
+    const next = data.slice()
+    const cat = next[catIdx]
+    const items = cat.items.filter((_, i) => i !== itemIdx)
+    if (items.length === 0) {
+      // 비면 카테고리도 제거
+      next.splice(catIdx, 1)
+    } else {
+      next[catIdx] = { ...cat, items }
+    }
+    persist(next)
   }
+
+  const toggle = (cat) => setCollapsed((c) => ({ ...c, [cat]: !c[cat] }))
 
   return (
     <div className="subtab-content">
-      {adding && <FavoriteAddForm onSave={onAdd} onCancel={() => setAdding(false)} />}
-      <div className="fav-grid">
-        <button type="button" className="fav-card add" onClick={() => setAdding(true)}>
-          <span className="emoji">＋</span>
-          <span className="name">추가</span>
-        </button>
-        {items?.map((it) => (
-          <div key={it.id} className="fav-card-wrap">
-            <a className="fav-card" href={coupangUrl(it.search_keyword || it.name)} target="_blank" rel="noopener noreferrer">
-              <span className="emoji">{it.emoji || '🥬'}</span>
-              <span className="name">{it.name}</span>
-            </a>
-            <button type="button" className="fav-del" onClick={() => onDelete(it.id)} aria-label="삭제">×</button>
-          </div>
-        ))}
-      </div>
-      {items != null && items.length === 0 && !adding && (
-        <div className="empty" style={{ marginTop: 24 }}>
-          <div className="big-icon">🥬</div>
-          <div className="title">자주 사는 식재료를 등록해보세요</div>
-          <div>탭하면 쿠팡 로켓프레시로 바로 이동해요</div>
-        </div>
+      <button type="button" className="fav-add-bar" onClick={() => setAdding(true)}>
+        <span className="plus">＋</span>
+        <span>재료 추가</span>
+      </button>
+
+      {data.map((cat, catIdx) => {
+        const isCollapsed = !!collapsed[cat.category]
+        return (
+          <section key={cat.category} className="fav-cat-section">
+            <button
+              type="button"
+              className="fav-cat-header"
+              onClick={() => toggle(cat.category)}
+              aria-expanded={!isCollapsed}
+            >
+              <span className="title">{cat.category}</span>
+              <span className="count">{cat.items.length}</span>
+              <span className={`chev ${isCollapsed ? 'closed' : ''}`}>▾</span>
+            </button>
+            {!isCollapsed && (
+              <div className="fav-row">
+                {cat.items.map((it, itemIdx) => (
+                  <FavItem
+                    key={`${it.name}-${itemIdx}`}
+                    item={it}
+                    onDelete={() => onDelete(catIdx, itemIdx)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )
+      })}
+
+      {adding && (
+        <FavoriteAddModal
+          categories={data.map((c) => c.category)}
+          onSave={onAdd}
+          onCancel={() => setAdding(false)}
+        />
       )}
     </div>
   )
 }
 
-function FavoriteAddForm({ onSave, onCancel }) {
+function FavItem({ item, onDelete }) {
+  const longPressed = useRef(false)
+  const timer = useRef(null)
+
+  const start = () => {
+    longPressed.current = false
+    timer.current = setTimeout(() => {
+      longPressed.current = true
+      if (confirm(`"${item.name}" 삭제할까요?`)) onDelete()
+    }, 600)
+  }
+  const cancel = () => { if (timer.current) clearTimeout(timer.current) }
+  const onClick = (e) => {
+    if (longPressed.current) {
+      e.preventDefault()
+      longPressed.current = false
+    }
+  }
+  const onContextMenu = (e) => {
+    e.preventDefault()
+    if (confirm(`"${item.name}" 삭제할까요?`)) onDelete()
+  }
+
+  return (
+    <a
+      className="fav-item"
+      href={coupangUrl(item.keyword || item.name)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClick}
+      onTouchStart={start}
+      onTouchEnd={cancel}
+      onTouchMove={cancel}
+      onMouseDown={start}
+      onMouseUp={cancel}
+      onMouseLeave={cancel}
+      onContextMenu={onContextMenu}
+    >
+      <span className="emoji">{item.emoji || '🥬'}</span>
+      <span className="name">{item.name}</span>
+    </a>
+  )
+}
+
+function FavoriteAddModal({ categories, onSave, onCancel }) {
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('🥬')
+  const [keyword, setKeyword] = useState('')
+  const [category, setCategory] = useState(categories[0] || '🥬 채소')
+
   const submit = (e) => {
     e?.preventDefault()
-    const trimmed = name.trim()
-    if (!trimmed) return
-    onSave(trimmed, emoji)
+    const n = name.trim()
+    if (!n) return
+    onSave({ name: n, emoji, keyword: (keyword.trim() || n), category })
   }
+
   return (
-    <form className="fav-add-form" onSubmit={submit}>
-      <div className="row">
-        <span className="picked-emoji">{emoji}</span>
-        <input className="search-input" placeholder="이름 (예: 계란)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+    <div className="fav-modal-overlay" onClick={onCancel}>
+      <div className="fav-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="fav-modal-head">
+          <span className="picked-emoji">{emoji}</span>
+          <div className="title">재료 추가</div>
+        </div>
+
+        <form onSubmit={submit} className="fav-modal-body">
+          <label className="field">
+            <span>이름</span>
+            <input
+              className="search-input"
+              placeholder="예: 계란"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+          </label>
+
+          <label className="field">
+            <span>검색 키워드 <em>(선택, 비우면 이름 사용)</em></span>
+            <input
+              className="search-input"
+              placeholder="예: 계란 30구"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
+          </label>
+
+          <label className="field">
+            <span>카테고리</span>
+            <select
+              className="search-input"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </label>
+
+          <div className="field">
+            <span>이모지</span>
+            <div className="emoji-grid">
+              {FOOD_EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  className={`emoji-cell ${emoji === e ? 'active' : ''}`}
+                  onClick={() => setEmoji(e)}
+                >{e}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" className="btn tonal" onClick={onCancel}>취소</button>
+            <button type="submit" className="btn">저장</button>
+          </div>
+        </form>
       </div>
-      <div className="emoji-grid">
-        {FOOD_EMOJIS.map((e) => (
-          <button key={e} type="button" className={`emoji-cell ${emoji === e ? 'active' : ''}`} onClick={() => setEmoji(e)}>{e}</button>
-        ))}
-      </div>
-      <div className="form-actions">
-        <button type="button" className="btn tonal" onClick={onCancel}>취소</button>
-        <button type="submit" className="btn">저장</button>
-      </div>
-    </form>
+    </div>
   )
 }
 

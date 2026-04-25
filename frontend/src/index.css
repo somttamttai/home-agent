@@ -2918,7 +2918,180 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 
 .subtab-content { padding-top: 8px; }
 
-/* ── Favorites grid ─────────────────────────────────────────── */
+/* ── Favorites: 상단 추가 버튼 ─────────────────────────────── */
+.fav-add-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px dashed var(--primary);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: transform 150ms ease-out, background 0.15s;
+  font-family: inherit;
+}
+.fav-add-bar:active { transform: scale(0.99); }
+.fav-add-bar .plus { font-size: 18px; line-height: 1; }
+
+/* ── Favorites: 카테고리 섹션 ──────────────────────────────── */
+.fav-cat-section {
+  margin-bottom: 14px;
+}
+.fav-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 6px 4px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.fav-cat-header .title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.fav-cat-header .count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-sub);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.fav-cat-header .chev {
+  margin-left: auto;
+  color: var(--text-hint);
+  font-size: 14px;
+  transition: transform 150ms ease;
+}
+.fav-cat-header .chev.closed { transform: rotate(-90deg); }
+
+/* 카테고리 안의 가로 스크롤 행 */
+.fav-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px 8px;
+  scroll-snap-type: x proximity;
+}
+.fav-row::-webkit-scrollbar { display: none; }
+.fav-item {
+  flex: 0 0 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 150ms ease-out, border-color 0.15s;
+  box-shadow: var(--shadow-sm);
+  scroll-snap-align: start;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.fav-item:active { transform: scale(0.95); }
+.fav-item .emoji {
+  font-size: 28px;
+  line-height: 1;
+}
+.fav-item .name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Favorites: Add 모달 ─────────────────────────────────── */
+.fav-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  animation: fadeIn 180ms ease-out;
+}
+.fav-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--card);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  animation: pageEnter 220ms ease-out;
+}
+.fav-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px 6px;
+}
+.fav-modal-head .picked-emoji {
+  width: 48px;
+  height: 48px;
+  font-size: 28px;
+  background: var(--bg);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fav-modal-head .title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+.fav-modal-body {
+  padding: 8px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.fav-modal-body .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fav-modal-body .field > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+.fav-modal-body .field > span em {
+  color: var(--text-hint);
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* ── (legacy) Favorites grid — 다른 페이지에서 사용 가능성 대비 유지 */
 .fav-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
