@@ -12,7 +12,7 @@ import { useConsumables } from '../hooks/useConsumables.jsx'
 // ───────────────────────────────────────────────────────────────────────
 // 메인 카드
 // ───────────────────────────────────────────────────────────────────────
-export default function StockCard({ item, onRefresh, onStockChange, onUpdate, onDelete }) {
+export default function StockCard({ item, compact, onRefresh, onStockChange, onUpdate, onDelete }) {
   const {
     name, brand, spec, current_stock, max_stock,
     daily_usage, days_left, reorder_point, need_reorder,
@@ -25,6 +25,12 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
   const [activeModal, setActiveModal] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showCatMove, setShowCatMove] = useState(false)
+
+  // 컴팩트 모드 시트
+  const [addSheetOpen, setAddSheetOpen] = useState(false)
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false)
+  const [showAddCustom, setShowAddCustom] = useState(false)
+  const [addCustomQty, setAddCustomQty] = useState('')
 
   // 재고 조작 선택 상태: null | 1|2|3|4 | 'custom'
   const [selectedAdd, setSelectedAdd] = useState(null)
@@ -100,6 +106,235 @@ export default function StockCard({ item, onRefresh, onStockChange, onUpdate, on
 
   const stockInfo = formatDaysLeft(days_left)
   const usageText = formatDailyUsage(daily_usage)
+
+  // 빠른 액션 (컴팩트 카드용)
+  const quickAdd = async (qty) => {
+    if (!qty || qty <= 0) return
+    const base = Math.max(0, Math.floor(Number(current_stock) || 0))
+    await onStockChange?.(item, base + qty)
+    try {
+      await fetch('/api/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          consumable_id: item.id,
+          quantity: qty,
+          purchase_type: 'gift',
+          days_before_depletion: item.days_left,
+        }),
+      })
+    } catch {}
+    toast(`+${qty}개 추가됨`)
+  }
+  const quickLow = async () => {
+    const du = Number(daily_usage) || 0
+    const newStock = du > 0 ? 7 * du : 0
+    await onStockChange?.(item, newStock)
+    toast('⚠️ 부족 상태로 변경됐어요')
+  }
+  const closeAddSheet = () => {
+    setAddSheetOpen(false)
+    setShowAddCustom(false)
+    setAddCustomQty('')
+  }
+
+  if (compact) {
+    return (
+      <>
+        <div
+          className={`stock-card stock-card-compact tap-card ${need_reorder ? 'warning' : ''}`}
+          onClick={() => setDetailSheetOpen(true)}
+          role="button"
+          tabIndex={0}
+        >
+          <div className="cc-top">
+            <div className="cc-name">{name}</div>
+            <button
+              type="button"
+              className="more-btn"
+              onClick={(e) => { e.stopPropagation(); setSheetOpen(true) }}
+              aria-label="더보기"
+            >
+              ⋯
+            </button>
+          </div>
+          <div
+            className="cc-days"
+            style={stockInfo ? { color: stockInfo.color } : { color: 'var(--text-sub)' }}
+          >
+            {stockInfo ? `${stockInfo.value}${stockInfo.unit}` : '미입력'}
+          </div>
+          <div className="cc-progress">
+            <div
+              style={{
+                width: `${pct}%`,
+                background: stockInfo?.color || 'var(--primary)',
+              }}
+            />
+          </div>
+          <div className="cc-actions">
+            <button
+              type="button"
+              className="cc-btn add"
+              onClick={(e) => { e.stopPropagation(); setAddSheetOpen(true) }}
+              aria-label="재고 추가"
+            >
+              ＋
+            </button>
+            <button
+              type="button"
+              className="cc-btn low"
+              onClick={(e) => { e.stopPropagation(); quickLow() }}
+            >
+              부족
+            </button>
+          </div>
+        </div>
+
+        {/* 빠른 추가 시트 */}
+        <BottomSheet open={addSheetOpen} onClose={closeAddSheet} title={`${name} 추가`}>
+          <div className="qty-quick-grid">
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                type="button"
+                className="qty-quick-btn"
+                onClick={async () => { await quickAdd(n); closeAddSheet() }}
+              >
+                +{n}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="qty-quick-btn alt"
+              onClick={() => setShowAddCustom(true)}
+            >
+              ✏️
+            </button>
+          </div>
+          {showAddCustom && (
+            <div className="qty-quick-custom">
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                step="1"
+                autoFocus
+                value={addCustomQty}
+                onChange={(e) => setAddCustomQty(e.target.value)}
+                placeholder="수량 입력"
+              />
+              <button
+                type="button"
+                className="btn"
+                disabled={!(Number(addCustomQty) > 0)}
+                onClick={async () => {
+                  const n = Number(addCustomQty)
+                  if (!n || n <= 0) return
+                  await quickAdd(n)
+                  closeAddSheet()
+                }}
+              >
+                추가
+              </button>
+            </div>
+          )}
+        </BottomSheet>
+
+        {/* 상세 정보 시트 */}
+        <BottomSheet open={detailSheetOpen} onClose={() => setDetailSheetOpen(false)} title={name}>
+          <div className="stock-detail-body">
+            {(brand || spec) && (
+              <div className="detail-meta">
+                {[brand, spec].filter(Boolean).join(' · ')}
+              </div>
+            )}
+            {usageText && (
+              <div className="detail-usage">⏱ {usageText}</div>
+            )}
+            {stockInfo ? (
+              <div className="detail-days" style={{ color: stockInfo.color }}>
+                {stockInfo.value}{stockInfo.unit} 남았어요
+              </div>
+            ) : (
+              <div className="detail-days" style={{ color: 'var(--text-sub)', fontSize: 16 }}>
+                사용량 미입력
+              </div>
+            )}
+            <div className="progress-bar">
+              <div
+                style={{
+                  width: `${pct}%`,
+                  background: stockInfo?.color || 'var(--primary)',
+                }}
+              />
+            </div>
+            {onRefresh && (
+              <button
+                type="button"
+                className="refresh-btn"
+                onClick={() => { onRefresh(item); setDetailSheetOpen(false) }}
+              >
+                💰 최저가 비교
+              </button>
+            )}
+          </div>
+        </BottomSheet>
+
+        {/* 액션 메뉴 (편집/삭제 등) */}
+        <BottomSheet open={sheetOpen} onClose={closeSheet} title={name}>
+          {showCatMove ? (
+            <CatMoveList item={item} onUpdate={onUpdate} onClose={closeSheet} />
+          ) : !confirmDelete ? (
+            <>
+              <button type="button" className="sheet-item" onClick={() => openModal('info')}>
+                <span className="icon">✏️</span>
+                <span className="label">상품 정보 수정</span>
+                <span className="chev">›</span>
+              </button>
+              <button type="button" className="sheet-item" onClick={() => openModal('consumption')}>
+                <span className="icon">📊</span>
+                <span className="label">소비 속도 수정</span>
+                <span className="chev">›</span>
+              </button>
+              <button type="button" className="sheet-item" onClick={() => setShowCatMove(true)}>
+                <span className="icon">📂</span>
+                <span className="label">카테고리 이동</span>
+                <span className="chev">›</span>
+              </button>
+              {onRefresh && (
+                <button type="button" className="sheet-item" onClick={() => { onRefresh(item); closeSheet() }}>
+                  <span className="icon">💰</span>
+                  <span className="label">최저가 비교</span>
+                  <span className="chev">›</span>
+                </button>
+              )}
+              <div className="sheet-divider" />
+              <button type="button" className="sheet-item danger" onClick={() => setConfirmDelete(true)}>
+                <span className="icon">🗑️</span>
+                <span className="label">삭제</span>
+              </button>
+            </>
+          ) : (
+            <div className="sheet-confirm">
+              <div className="confirm-title">정말 삭제할까요?</div>
+              <div className="confirm-msg">
+                "{name}" 을(를) 삭제합니다.<br />
+                이 작업은 되돌릴 수 없어요.
+              </div>
+              <div className="confirm-actions">
+                <button type="button" className="btn secondary" onClick={() => setConfirmDelete(false)}>취소</button>
+                <button type="button" className="btn danger" onClick={handleDelete}>삭제</button>
+              </div>
+            </div>
+          )}
+        </BottomSheet>
+
+        <InfoModal open={activeModal === 'info'} item={item} onClose={closeModal} onUpdate={onUpdate} />
+        <ConsumptionModal open={activeModal === 'consumption'} item={item} onClose={closeModal} onUpdate={onUpdate} />
+      </>
+    )
+  }
 
   return (
     <>

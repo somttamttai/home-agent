@@ -109,9 +109,9 @@ export default function CategoryDetail() {
                 </span>
               )}
             </div>
-            <div className="stock-card-list">
+            <div className="stock-card-list compact-grid">
               {filtered.map((it) => (
-                <StockCard key={it.id} item={it}
+                <StockCard key={it.id} item={it} compact
                   onRefresh={onRefresh} onStockChange={onStockChange}
                   onUpdate={onUpdate} onDelete={onDelete} />
               ))}

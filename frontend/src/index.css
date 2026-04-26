@@ -560,6 +560,191 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   cursor: not-allowed;
 }
 
+/* ── Compact stock card (카테고리 상세 2열 그리드) ───────────── */
+.stock-card-list.compact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.stock-card.stock-card-compact {
+  padding: 12px;
+  margin-bottom: 0;
+  cursor: pointer;
+}
+.stock-card.stock-card-compact .cc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.stock-card.stock-card-compact .cc-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stock-card.stock-card-compact .more-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.stock-card.stock-card-compact .cc-days {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+}
+.stock-card.stock-card-compact .cc-progress {
+  height: 4px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.stock-card.stock-card-compact .cc-progress > div {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+.stock-card.stock-card-compact .cc-actions {
+  display: flex;
+  gap: 6px;
+}
+.stock-card.stock-card-compact .cc-btn {
+  flex: 1;
+  height: 30px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+}
+.stock-card.stock-card-compact .cc-btn:active { transform: scale(0.94); }
+.stock-card.stock-card-compact .cc-btn.add {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+}
+.stock-card.stock-card-compact .cc-btn.add:active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #FFFFFF;
+}
+.stock-card.stock-card-compact .cc-btn.low {
+  border-color: #F97316;
+  color: #F97316;
+}
+.stock-card.stock-card-compact .cc-btn.low:active {
+  background: #F97316;
+  color: #FFFFFF;
+}
+
+/* 빠른 추가 시트 */
+.qty-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  padding: 4px 16px 0;
+}
+.qty-quick-btn {
+  height: 56px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.qty-quick-btn:active { transform: scale(0.94); background: var(--primary-light); }
+.qty-quick-btn.alt { font-size: 18px; }
+.qty-quick-custom {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 4px;
+}
+.qty-quick-custom input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--primary);
+  background: var(--card);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.qty-quick-custom .btn {
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+/* 상세 정보 시트 */
+.stock-detail-body {
+  padding: 4px 16px 8px;
+}
+.stock-detail-body .detail-meta {
+  font-size: 13px;
+  color: var(--text-sub);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.stock-detail-body .detail-usage {
+  font-size: 12px;
+  color: var(--text-hint);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.stock-detail-body .detail-days {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 12px;
+}
+.stock-detail-body .progress-bar {
+  height: 6px;
+  margin-bottom: 14px;
+}
+.stock-detail-body .refresh-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.stock-detail-body .refresh-btn:active { transform: scale(0.98); }
+
 /* ── Buttons — glass 구조 (색상 유지) ──────────────────────── */
 .btn {
   display: inline-block;
