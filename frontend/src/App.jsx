@@ -26,7 +26,7 @@ function AppRoutes() {
     return (
       <div className="login-page">
         <div className="login-content">
-          <div className="login-logo">🏠</div>
+          <img className="login-logo" src="/logo.png" alt="솜솜" width="96" height="96" />
           <p style={{ color: 'var(--text-sub)', marginTop: 16 }}>불러오는 중...</p>
         </div>
       </div>

@@ -62,7 +62,7 @@ export default function HouseholdSetup() {
   return (
     <div className="login-page page-enter">
       <div className="login-content" style={{ maxWidth: 400 }}>
-        <div className="login-logo">🏠</div>
+        <img className="login-logo" src="/logo.png" alt="솜솜" width="96" height="96" />
         <h1 className="login-title" style={{ fontSize: 22 }}>우리집 설정</h1>
         <p className="login-subtitle">새 집을 만들거나 초대코드로 참가하세요</p>
 

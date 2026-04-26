@@ -4,10 +4,10 @@
  * ───────────────────────────────────────────────────────────── */
 
 :root {
-  --primary: #2E7D32;
-  --primary-light: #E8F2E9;
-  --primary-dark: #1B5E20;
-  --primary-rgb: 46, 125, 50;
+  --primary: #00658B;
+  --primary-light: #E5F2F7;
+  --primary-dark: #004A66;
+  --primary-rgb: 0, 101, 139;
 
   --bg: #F5F5F5;
   --bg-elev: #FFFFFF;
@@ -66,7 +66,7 @@
     --text: #FFFFFF;
     --text-sub: #AEAEB2;
     --text-hint: #636366;
-    --primary-light: #223320;
+    --primary-light: #0F2A35;
     --border: #2C2C2E;
     --border-strong: #3A3A3C;
     --danger-bg: #3A1E1C;
@@ -2286,9 +2286,13 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
   max-width: 340px;
 }
 .login-logo {
-  font-size: 64px;
-  line-height: 1;
+  display: inline-block;
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
   margin-bottom: 16px;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
 }
 .login-title {
   font-size: 28px;
@@ -2337,6 +2341,35 @@ h1, h2, h3, h4 { margin: 0; letter-spacing: -0.02em; }
 .login-btn.kakao {
   background: #FEE500;
   color: #3C1E1E;
+}
+
+/* ── Onboarding Brand Intro ──────────────────────────────── */
+.ob-brand-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 0 0 24px;
+}
+.ob-brand-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+}
+.ob-brand-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin-bottom: 4px;
+}
+.ob-brand-tagline {
+  font-size: 14px;
+  color: var(--text-sub);
+  line-height: 1.5;
 }
 
 /* ── Household Setup ─────────────────────────────────────── */

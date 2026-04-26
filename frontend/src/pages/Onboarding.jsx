@@ -131,6 +131,11 @@ function Counter({ label, hint, value, onChange, min = 0 }) {
 function StepFamily({ family, setFamily }) {
   return (
     <div className="ob-step">
+      <div className="ob-brand-intro">
+        <img className="ob-brand-logo" src="/logo.png" alt="솜솜" width="80" height="80" />
+        <div className="ob-brand-name">솜솜</div>
+        <div className="ob-brand-tagline">솜처럼 포근하게 우리집을 챙겨드려요</div>
+      </div>
       <div className="ob-title">몇 명이 함께 사세요?</div>
       <Counter label="성인" hint="13세 이상" value={family.adults}
         onChange={(n) => setFamily((f) => ({ ...f, adults: n }))} min={1} />

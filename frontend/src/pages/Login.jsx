@@ -6,9 +6,9 @@ export default function Login() {
   return (
     <div className="login-page page-enter">
       <div className="login-content">
-        <div className="login-logo">🏠</div>
-        <h1 className="login-title">home-agent</h1>
-        <p className="login-subtitle">우리집 소모품을 스마트하게 관리해요</p>
+        <img className="login-logo" src="/logo.png" alt="솜솜" width="96" height="96" />
+        <h1 className="login-title">솜솜</h1>
+        <p className="login-subtitle">솜처럼 포근하게 우리집을 챙겨드려요</p>
 
         <div className="login-buttons">
           <button

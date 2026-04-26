@@ -1,22 +1,24 @@
 {
-  "name": "home-agent",
-  "short_name": "home-agent",
-  "description": "집안 소모품 재고/가격 관리 에이전트",
+  "name": "솜솜",
+  "short_name": "솜솜",
+  "description": "솜처럼 포근하게 우리집을 챙겨드려요",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F5F5",
-  "theme_color": "#1A7A4A",
+  "background_color": "#FFFFFF",
+  "theme_color": "#00658B",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzFBN0E0QSIvPjx0ZXh0IHg9Ijk2IiB5PSIxMzQiIGZvbnQtc2l6ZT0iMTIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7wn4+gPC90ZXh0Pjwvc3ZnPg==",
+      "src": "/logo-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzFBN0E0QSIvPjx0ZXh0IHg9IjI1NiIgeT0iMzYwIiBmb250LXNpemU9IjMyMCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+8J+PoDwvdGV4dD48L3N2Zz4=",
+      "src": "/logo-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
