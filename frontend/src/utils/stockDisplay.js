@@ -2,14 +2,10 @@
 
 export function formatDaysLeft(days) {
   if (days == null) return null
-  const d = Math.max(0, Number(days))
-  if (d <= 7) {
-    return { value: d, unit: '일치', color: '#EF4444', level: 'urgent' }
-  }
-  if (d <= 30) {
-    return { value: Math.round(d / 7), unit: '주치', color: '#F97316', level: 'warning' }
-  }
-  return { value: Math.round(d / 30), unit: '개월치', color: '#1A7A4A', level: 'safe' }
+  const d = Math.max(0, Math.round(Number(days)))
+  if (d <= 7) return { days: d, color: '#EF4444', level: 'urgent' }
+  if (d <= 30) return { days: d, color: '#F97316', level: 'warning' }
+  return { days: d, color: '#1A7A4A', level: 'safe' }
 }
 
 export function formatDailyUsage(du) {

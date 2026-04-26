@@ -5,7 +5,8 @@ import StockCard from '../components/StockCard.jsx'
 import Modal from '../components/Modal.jsx'
 import BottomSheet from '../components/BottomSheet.jsx'
 import { useConsumables } from '../hooks/useConsumables.jsx'
-import { useCategories } from '../hooks/useCategories.jsx'
+import { useCategories, PERSONAL_CATEGORY_KEY } from '../hooks/useCategories.jsx'
+import { useAuth } from '../hooks/useAuth.jsx'
 import { useToast } from '../components/Toast.jsx'
 
 const EMOJI_PICKS = ['🛁','🍳','🧺','🧹','🛏','👔','🍼','💊','🐾','🚗','🏋️','📚','🎮','🐶','🧴','🪥','🧽','🧤','🌸','☕']
@@ -16,8 +17,23 @@ export default function CategoryDetail() {
   const nav = useNavigate()
   const toast = useToast()
   const { getIcon, categories, customCategories, updateCategory, deleteCategory } = useCategories()
+  const { user } = useAuth()
   const icon = getIcon(decoded)
   const isCustom = customCategories.some((c) => c.key === decoded)
+  const isPersonal = decoded === PERSONAL_CATEGORY_KEY
+
+  const [personalIntroSeen, setPersonalIntroSeen] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('personal_intro_seen') === 'true',
+  )
+  const showIntro = isPersonal && !personalIntroSeen
+  const dismissIntro = () => {
+    try { localStorage.setItem('personal_intro_seen', 'true') } catch {}
+    setPersonalIntroSeen(true)
+  }
+  const userName = user?.user_metadata?.name
+    || user?.user_metadata?.full_name
+    || user?.email?.split('@')[0]
+    || '회원'
 
   const {
     items, loading, error, reload,
@@ -29,10 +45,16 @@ export default function CategoryDetail() {
       if ((i.category || '기타') === decoded) return true
       const linked = Array.isArray(i.linked_categories) ? i.linked_categories : []
       return linked.includes(decoded)
+    }).sort((a, b) => {
+      const av = a.days_left == null ? Number.POSITIVE_INFINITY : Number(a.days_left)
+      const bv = b.days_left == null ? Number.POSITIVE_INFINITY : Number(b.days_left)
+      return av - bv
     }),
     [items, decoded],
   )
   const low = filtered.filter((i) => i.need_reorder)
+  const [showOnlyLow, setShowOnlyLow] = useState(false)
+  const visible = showOnlyLow ? low : filtered
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -81,9 +103,30 @@ export default function CategoryDetail() {
         )}
       </PageHeader>
       <div className="page">
-        {loading && <div className="empty">불러오는 중…</div>}
+        {showIntro && (
+          <div className="personal-intro">
+            <div className="pi-icon">🔒</div>
+            <div className="pi-title">나만의 소모품</div>
+            <div className="pi-lead">
+              이 공간은 <b>{userName}</b>님만 볼 수 있어요
+            </div>
+            <div className="pi-sub">
+              다른 가족 구성원에게는 보이지 않는<br />개인 전용 공간이에요
+            </div>
+            <ul className="pi-bullets">
+              <li>✅ 생리대, 화장품 등 개인 관리 용품을 관리할 수 있어요</li>
+              <li>✅ 다른 가족은 이 카테고리 자체를 볼 수 있지만, 안에 등록한 소모품은 보이지 않아요</li>
+              <li>✅ 가격비교, 재고관리 기능 모두 동일하게 사용 가능해요</li>
+            </ul>
+            <button type="button" className="btn pi-cta" onClick={dismissIntro}>
+              시작하기
+            </button>
+          </div>
+        )}
 
-        {!loading && error && (
+        {!showIntro && loading && <div className="empty">불러오는 중…</div>}
+
+        {!showIntro && !loading && error && (
           <div className="empty">
             <div className="big-icon">⚠️</div>
             <div className="title">서버 연결 실패</div>
@@ -92,30 +135,46 @@ export default function CategoryDetail() {
           </div>
         )}
 
-        {!loading && !error && filtered.length === 0 && (
+        {!showIntro && !loading && !error && filtered.length === 0 && (
           <div className="empty">
             <div className="big-icon">{icon}</div>
-            <div className="title">이 카테고리에 등록된 소모품이 없어요</div>
+            <div className="title">
+              {isPersonal
+                ? '아직 등록된 개인 소모품이 없어요'
+                : '이 카테고리에 등록된 소모품이 없어요'}
+            </div>
           </div>
         )}
 
-        {!loading && !error && filtered.length > 0 && (
+        {!showIntro && !loading && !error && filtered.length > 0 && (
           <>
-            <div className="section-title" style={{ paddingTop: 0 }}>
-              {filtered.length}개
+            <div className="section-title" style={{ paddingTop: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>{filtered.length}개</span>
               {low.length > 0 && (
-                <span style={{ color: 'var(--danger)', marginLeft: 8 }}>
-                  · ⚠️ 부족 {low.length}개
-                </span>
+                <button
+                  type="button"
+                  className={`low-filter-chip ${showOnlyLow ? 'active' : ''}`}
+                  onClick={() => setShowOnlyLow((v) => !v)}
+                  aria-pressed={showOnlyLow}
+                >
+                  ⚠️ 부족 {low.length}개
+                </button>
               )}
             </div>
-            <div className="stock-card-list compact-grid">
-              {filtered.map((it) => (
-                <StockCard key={it.id} item={it} compact
-                  onRefresh={onRefresh} onStockChange={onStockChange}
-                  onUpdate={onUpdate} onDelete={onDelete} />
-              ))}
-            </div>
+            {visible.length === 0 ? (
+              <div className="empty">
+                <div className="big-icon">✨</div>
+                <div className="title">부족한 소모품이 없어요</div>
+              </div>
+            ) : (
+              <div className="stock-card-list compact-grid">
+                {visible.map((it) => (
+                  <StockCard key={it.id} item={it} compact
+                    onRefresh={onRefresh} onStockChange={onStockChange}
+                    onUpdate={onUpdate} onDelete={onDelete} />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

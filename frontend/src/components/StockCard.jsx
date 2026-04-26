@@ -5,6 +5,7 @@ import { useToast } from './Toast.jsx'
 import { calcDailyUsage } from '../utils/consumption.js'
 import { historyBrands, historySpecs, recommendSpecs } from '../utils/brandRecommend.js'
 import { formatDaysLeft, formatDailyUsage } from '../utils/stockDisplay.js'
+import { getItemEmoji } from '../utils/itemEmoji.js'
 import { useAuth } from '../hooks/useAuth.jsx'
 import { useCategories } from '../hooks/useCategories.jsx'
 import { useConsumables } from '../hooks/useConsumables.jsx'
@@ -15,8 +16,9 @@ import { useConsumables } from '../hooks/useConsumables.jsx'
 export default function StockCard({ item, compact, onRefresh, onStockChange, onUpdate, onDelete }) {
   const {
     name, brand, spec, current_stock, max_stock,
-    daily_usage, days_left, reorder_point, need_reorder,
+    daily_usage, days_left, reorder_point, need_reorder, owner_id,
   } = item
+  const isPersonalItem = !!owner_id
 
   const toast = useToast()
   const { authHeaders } = useAuth()
@@ -139,31 +141,49 @@ export default function StockCard({ item, compact, onRefresh, onStockChange, onU
   }
 
   if (compact) {
+    const emoji = getItemEmoji(name)
+    const level = stockInfo?.level || 'none'
     return (
       <>
         <div
-          className={`stock-card stock-card-compact tap-card ${need_reorder ? 'warning' : ''}`}
+          className={`stock-card stock-card-compact tap-card level-${level} ${isPersonalItem ? 'personal' : ''}`}
           onClick={() => setDetailSheetOpen(true)}
           role="button"
           tabIndex={0}
         >
           <div className="cc-top">
-            <div className="cc-name">{name}</div>
-            <button
-              type="button"
-              className="more-btn"
-              onClick={(e) => { e.stopPropagation(); setSheetOpen(true) }}
-              aria-label="더보기"
-            >
-              ⋯
-            </button>
+            <div className="cc-name">
+              <span className="cc-emoji">{emoji}</span>
+              <span className="cc-text">{name}</span>
+            </div>
+            <div className="cc-aside">
+              {isPersonalItem && (
+                <span className="cc-lock" aria-label="개인 소모품">🔒</span>
+              )}
+              <button
+                type="button"
+                className="more-btn"
+                onClick={(e) => { e.stopPropagation(); setSheetOpen(true) }}
+                aria-label="더보기"
+              >
+                ⋯
+              </button>
+            </div>
           </div>
-          <div
-            className="cc-days"
-            style={stockInfo ? { color: stockInfo.color } : { color: 'var(--text-sub)' }}
-          >
-            {stockInfo ? `${stockInfo.value}${stockInfo.unit}` : '미입력'}
+
+          <div className="cc-center">
+            {stockInfo ? (
+              <>
+                <div className="cc-dn" style={{ color: stockInfo.color }}>
+                  D-{stockInfo.days}
+                </div>
+                <div className="cc-sub">남았어요</div>
+              </>
+            ) : (
+              <div className="cc-sub">사용량 미입력</div>
+            )}
           </div>
+
           <div className="cc-progress">
             <div
               style={{
@@ -172,7 +192,15 @@ export default function StockCard({ item, compact, onRefresh, onStockChange, onU
               }}
             />
           </div>
+
           <div className="cc-actions">
+            <button
+              type="button"
+              className="cc-btn low"
+              onClick={(e) => { e.stopPropagation(); quickLow() }}
+            >
+              부족
+            </button>
             <button
               type="button"
               className="cc-btn add"
@@ -180,13 +208,6 @@ export default function StockCard({ item, compact, onRefresh, onStockChange, onU
               aria-label="재고 추가"
             >
               ＋
-            </button>
-            <button
-              type="button"
-              className="cc-btn low"
-              onClick={(e) => { e.stopPropagation(); quickLow() }}
-            >
-              부족
             </button>
           </div>
         </div>
@@ -254,7 +275,7 @@ export default function StockCard({ item, compact, onRefresh, onStockChange, onU
             )}
             {stockInfo ? (
               <div className="detail-days" style={{ color: stockInfo.color }}>
-                {stockInfo.value}{stockInfo.unit} 남았어요
+                D-{stockInfo.days} 남았어요
               </div>
             ) : (
               <div className="detail-days" style={{ color: 'var(--text-sub)', fontSize: 16 }}>
@@ -350,19 +371,24 @@ export default function StockCard({ item, compact, onRefresh, onStockChange, onU
             )}
           </div>
           <div className="aside">
-            <button
-              type="button"
-              className="more-btn"
-              onClick={() => setSheetOpen(true)}
-              aria-label="더보기"
-            >
-              ⋯
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {isPersonalItem && (
+                <span className="cc-lock" aria-label="개인 소모품">🔒</span>
+              )}
+              <button
+                type="button"
+                className="more-btn"
+                onClick={() => setSheetOpen(true)}
+                aria-label="더보기"
+              >
+                ⋯
+              </button>
+            </div>
             <div className="days" style={stockInfo ? { color: stockInfo.color } : undefined}>
               {stockInfo ? (
                 <>
-                  <div key={`${stockInfo.value}-${stockInfo.unit}`} className="phrase-main number-pop">
-                    {stockInfo.value}{stockInfo.unit}
+                  <div key={stockInfo.days} className="phrase-main number-pop">
+                    D-{stockInfo.days}
                   </div>
                   <div className="phrase-sub">남았어요</div>
                 </>

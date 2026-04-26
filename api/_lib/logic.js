@@ -20,16 +20,23 @@ export class BadRequest extends Error {
   }
 }
 
+const PERSONAL_CATEGORY = '나만보기';
+
 const CREATE_FIELDS = new Set([
   'name', 'brand', 'spec', 'category', 'max_stock',
   'current_stock', 'daily_usage', 'reorder_point', 'household_id',
-  'linked_categories',
+  'linked_categories', 'owner_id',
 ]);
 const UPDATE_FIELDS = new Set([
   'name', 'brand', 'spec', 'category',
   'current_stock', 'max_stock', 'daily_usage', 'reorder_point', 'last_ordered_at',
-  'linked_categories',
+  'linked_categories', 'owner_id',
 ]);
+
+function visibleToUser(rows, userId) {
+  if (!userId) return rows.filter((r) => !r.owner_id);
+  return rows.filter((r) => !r.owner_id || r.owner_id === userId);
+}
 
 function annotateStock(c) {
   const current = Number(c.current_stock) || 0;
@@ -55,20 +62,27 @@ function annotateStock(c) {
 }
 
 // ── consumables ────────────────────────────────────────────────────────
-export async function listConsumables(householdId = null) {
+export async function listConsumables(householdId = null, userId = null) {
   const params = { order: 'id.asc' };
   if (householdId) params.household_id = `eq.${householdId}`;
   const rows = await supabase.select('consumables', params);
-  return rows.map(annotateStock);
+  return visibleToUser(rows, userId).map(annotateStock);
 }
 
-export async function createConsumable(body) {
+export async function createConsumable(body, userId = null) {
   if (!body || !body.name) throw new BadRequest('name is required');
   const clean = {};
   for (const [k, v] of Object.entries(body)) {
     if (CREATE_FIELDS.has(k) && v !== null && v !== undefined && v !== '') {
       clean[k] = v;
     }
+  }
+  // 나만보기 카테고리면 owner_id 자동 설정 (제출된 owner_id 무시)
+  if (clean.category === PERSONAL_CATEGORY) {
+    if (!userId) throw new BadRequest('owner_id required for personal item');
+    clean.owner_id = userId;
+  } else {
+    delete clean.owner_id;
   }
   const row = await supabase.insert('consumables', clean);
   return annotateStock(row);
@@ -80,7 +94,7 @@ export async function getConsumable(cid) {
   return annotateStock(row);
 }
 
-export async function updateConsumable(cid, body) {
+export async function updateConsumable(cid, body, userId = null) {
   const patch = {};
   for (const [k, v] of Object.entries(body || {})) {
     if (!UPDATE_FIELDS.has(k)) continue;
@@ -90,6 +104,15 @@ export async function updateConsumable(cid, body) {
   }
   if (Object.keys(patch).length === 0) {
     throw new BadRequest('no updatable fields');
+  }
+  // category 가 변경되는 경우 owner_id 도 동기화
+  if (Object.prototype.hasOwnProperty.call(patch, 'category')) {
+    if (patch.category === PERSONAL_CATEGORY) {
+      if (!userId) throw new BadRequest('owner_id required for personal item');
+      patch.owner_id = userId;
+    } else {
+      patch.owner_id = null;
+    }
   }
   const rows = await supabase.update('consumables', { id: cid }, patch);
   if (!rows || rows.length === 0) throw new NotFound('consumable not found');
@@ -101,11 +124,11 @@ export async function deleteConsumable(cid) {
   return { ok: true };
 }
 
-export async function lowStockAlerts(householdId = null) {
+export async function lowStockAlerts(householdId = null, userId = null) {
   const params = {};
   if (householdId) params.household_id = `eq.${householdId}`;
   const rows = await supabase.select('consumables', params);
-  return rows.map(annotateStock).filter((r) => r.need_reorder);
+  return visibleToUser(rows, userId).map(annotateStock).filter((r) => r.need_reorder);
 }
 
 // ── purchases ─────────────────────────────────────────────────────────

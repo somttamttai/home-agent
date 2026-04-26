@@ -9,21 +9,22 @@ export default async function handler(req, res) {
     const { path } = parseUrl(req);
     const method = req.method;
 
-    const { householdId } = await authenticateRequest(req);
+    const { user, householdId } = await authenticateRequest(req);
+    const userId = user?.id || null;
 
     // /api/consumables
     if (path === '/api/consumables') {
-      if (method === 'GET') return await logic.listConsumables(householdId);
+      if (method === 'GET') return await logic.listConsumables(householdId, userId);
       if (method === 'POST') {
         const body = readBody(req);
         body.household_id = householdId;
-        return await logic.createConsumable(body);
+        return await logic.createConsumable(body, userId);
       }
     }
 
     // /api/consumables/alerts/low-stock
     if (path === '/api/consumables/alerts/low-stock' && method === 'GET') {
-      return await logic.lowStockAlerts(householdId);
+      return await logic.lowStockAlerts(householdId, userId);
     }
 
     // /api/consumables/{cid}
@@ -34,7 +35,7 @@ export default async function handler(req, res) {
       const cid = parseInt(tail, 10);
       if (Number.isNaN(cid)) throw new BadRequest('invalid id');
       if (method === 'GET')    return await logic.getConsumable(cid);
-      if (method === 'PATCH')  return await logic.updateConsumable(cid, readBody(req));
+      if (method === 'PATCH')  return await logic.updateConsumable(cid, readBody(req), userId);
       if (method === 'DELETE') return await logic.deleteConsumable(cid);
     }
 

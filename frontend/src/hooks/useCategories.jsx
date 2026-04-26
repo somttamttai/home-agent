@@ -18,6 +18,9 @@ const CONDITIONAL_CATEGORIES = [
   { key: '유아용품', icon: '🍼', condition: 'infants' },
 ]
 
+export const PERSONAL_CATEGORY_KEY = '나만보기'
+const PERSONAL_CATEGORY = { key: PERSONAL_CATEGORY_KEY, icon: '🔒', isPersonal: true }
+
 const CategoriesContext = createContext(null)
 
 export function CategoriesProvider({ children }) {
@@ -57,7 +60,7 @@ export function CategoriesProvider({ children }) {
   )
 
   const all = useMemo(
-    () => [...BASE_CATEGORIES, ...autoCategories, ...custom],
+    () => [...BASE_CATEGORIES, ...autoCategories, ...custom, PERSONAL_CATEGORY],
     [autoCategories, custom],
   )
 

@@ -40,7 +40,15 @@
       "Bash(grep -m 3 '\\\\\\\\r')",
       "Bash(awk '{ for\\(i=1;i<=length\\($0\\);i++\\){c=substr\\($0,i,1\\); if\\(c==\"\\\\r\"\\) print \"CR at line \"NR\" col \"i}}' \"C:\\\\Users\\\\박상민\\\\home-agent\\\\supabase\\\\migrations\\\\20260425_menu_recipes_1.sql\")",
       "Bash(rm scripts/fix-menu-sql.mjs)",
-      "Bash(rmdir scripts *)"
+      "Bash(rmdir scripts *)",
+      "Bash(npx --yes -p sharp@0.33.5 node -e \"const sharp=require\\('sharp'\\); sharp\\('frontend/public/logo.png'\\).metadata\\(\\).then\\(m=>console.log\\(m.width+'x'+m.height\\)\\);\")",
+      "Bash(git -C \"C:/Users/박상민/home-agent\" diff -- frontend/src/index.css)",
+      "Bash(cp frontend/src/index.css /tmp/index.css.full.bak)",
+      "Bash(git checkout *)",
+      "Read(//tmp/**)",
+      "Bash(cp src/index.css /tmp/index.css.full.bak)",
+      "Bash(git -C \"/c/Users/박상민/home-agent\" checkout HEAD -- frontend/src/index.css)",
+      "Bash(git *)"
     ]
   }
 }

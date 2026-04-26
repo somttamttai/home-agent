@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../hooks/useTheme.js'
 import { useConsumables } from '../hooks/useConsumables.jsx'
-import { useCategories } from '../hooks/useCategories.jsx'
+import { useCategories, PERSONAL_CATEGORY_KEY } from '../hooks/useCategories.jsx'
 import { useNotifications } from '../hooks/useNotifications.js'
 import Modal from '../components/Modal.jsx'
 import BottomSheet from '../components/BottomSheet.jsx'
@@ -167,6 +167,10 @@ export default function Home() {
     if (counts['기타']?.total > 0 && !withItems.includes('기타')) {
       withItems.push('기타')
     }
+    // '나만보기' 는 항상 마지막에 표시 (소모품 없어도 노출)
+    const idx = withItems.indexOf(PERSONAL_CATEGORY_KEY)
+    if (idx >= 0) withItems.splice(idx, 1)
+    withItems.push(PERSONAL_CATEGORY_KEY)
     return withItems
   }, [counts, catKeys, customCategories])
 
@@ -363,10 +367,12 @@ export default function Home() {
                 const c = counts[cat] || { total: 0, low: 0 }
                 const hasLow = c.low > 0
                 const isCustom = customKeys.has(cat)
+                const catObj = categories.find((x) => x.key === cat)
+                const isPersonal = !!catObj?.isPersonal
                 const go = () => nav(`/category/${encodeURIComponent(cat)}`)
                 return (
                   <div key={cat} role="button" tabIndex={0}
-                    className={`category-grid-card tap-card ${hasLow ? 'has-low' : ''}`}
+                    className={`category-grid-card tap-card ${hasLow ? 'has-low' : ''} ${isPersonal ? 'personal' : ''}`}
                     onClick={go}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go() } }}>
                     <div className="icon">{getIcon(cat)}</div>
